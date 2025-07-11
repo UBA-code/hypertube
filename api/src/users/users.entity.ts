@@ -6,9 +6,9 @@ export class User {
   id: number;
   @Column({ default: 'https://www.pngmart.com/files/23/Profile-PNG-Photo.png' })
   avatar: string;
-  @Column()
+  @Column({ unique: true })
   email: string;
-  @Column()
+  @Column({ unique: true })
   userName: string;
   @Column()
   lastName: string;

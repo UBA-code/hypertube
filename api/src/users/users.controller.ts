@@ -14,7 +14,7 @@ import { UsersService } from './users.service';
 import { UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UserResponseDto } from './dto/response-user.dto';
+import { UserPublicDataDto } from './dto/public-user.dto';
 import { File, FileInterceptor } from '@nest-lab/fastify-multer';
 
 @ApiTags('Users')
@@ -22,24 +22,23 @@ import { File, FileInterceptor } from '@nest-lab/fastify-multer';
 export class UsersController {
   constructor(private usersServive: UsersService) {}
 
-  @ApiOperation({ summary: 'create new user' })
-  @ApiResponse({
-    status: 201,
-    description: 'Return created user',
-    type: UserResponseDto,
-  })
-  @Post()
-  //optional file upload
-  @UseInterceptors(FileInterceptor('avatar'))
-  async createUser(@Body() user: UserDto, @UploadedFile() file?: File) {
-    return await this.usersServive.create(user, file);
-  }
+  // @ApiOperation({ summary: 'create new user' })
+  // @ApiResponse({
+  //   status: 201,
+  //   description: 'Return created user',
+  //   type: UserPublicDataDto,
+  // })
+  // @Post()
+  // @UseInterceptors(FileInterceptor('avatar'))
+  // async createUser(@Body() user: UserDto, @UploadedFile() file?: File) {
+  //   return await this.usersServive.create(user, file);
+  // }
 
   @ApiOperation({ summary: 'get all users' })
   @ApiResponse({
     status: 200,
     description: 'Return array of users',
-    type: UserResponseDto,
+    type: UserPublicDataDto,
   })
   @Get()
   async getUsers() {
@@ -50,7 +49,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Return user',
-    type: UserResponseDto,
+    type: UserPublicDataDto,
   })
   @Get(':id')
   async getUserById(@Param('id', ParseIntPipe) id: number) {
@@ -61,7 +60,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Return deleted user',
-    type: UserResponseDto,
+    type: UserPublicDataDto,
   })
   @Delete(':id')
   async deleteUserById(@Param('id', ParseIntPipe) id: number) {
@@ -72,7 +71,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'return updated user',
-    type: UserResponseDto,
+    type: UserPublicDataDto,
   })
   @UseInterceptors(FileInterceptor('avatar'))
   @Put(':id')

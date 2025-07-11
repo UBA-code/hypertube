@@ -7,6 +7,7 @@ import { FilesService } from 'src/files/files.service';
 import { FilesModule } from 'src/files/files.module';
 
 @Module({
+  exports: [UsersService],
   imports: [TypeOrmModule.forFeature([User]), FilesModule],
   providers: [UsersService, FilesService],
   controllers: [UsersController],

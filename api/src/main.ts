@@ -9,6 +9,7 @@ import { ValidationPipe } from '@nestjs/common';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { join } from 'path';
+import fastifyCookie from '@fastify/cookie';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -25,6 +26,9 @@ async function bootstrap() {
   app.register(fastifyStatic as any, {
     root: join(process.cwd(), 'uploads'), // Path to the uploads folder
     prefix: '/uploads/', // URL prefix for accessing files
+  });
+  await app.register(fastifyCookie as any, {
+    secret: 'my-secret', // for cookies signature
   });
 
   const config = new DocumentBuilder()

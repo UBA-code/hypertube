@@ -1,7 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 
-export class UserResponseDto {
+export class UserPublicDataDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
   @ApiProperty({ example: 'john_doe' })
   userName: string;
 
