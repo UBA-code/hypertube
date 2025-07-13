@@ -18,4 +18,6 @@ export class User {
   password: string;
   @Column()
   authType: 'local' | '42' | 'google' | 'github';
+  @Column({ nullable: true })
+  resetToken: string | null;
 }

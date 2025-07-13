@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from 'src/users/users.service';
@@ -25,12 +26,19 @@ import { FileValidationPipe } from 'src/pipes/FileValidationPipe';
 import { UploadInterceptor } from 'src/interceptors/upload-interceptor';
 import { GoogleGuard } from './guards/google.guard';
 import { GithubGuard } from './guards/github.guard';
+import { MailsService } from 'src/mails/mails.service';
+import {
+  EmailPayload,
+  AuthResponse,
+  ResetPasswordPayload,
+} from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
     private usersService: UsersService,
+    private mailService: MailsService,
   ) {}
 
   @SkipAuth()
@@ -39,26 +47,37 @@ export class AuthController {
   @ApiResponse({
     status: 201,
     description: 'Return created user',
-    type: userInfoDto,
+    type: AuthResponse,
   })
   @UseInterceptors(UploadInterceptor('avatar'))
   async createUser(
     @Res({ passthrough: true }) res: Response,
-    @Body() user: UserDto,
+    @Body(ValidationPipe) user: UserDto,
     @UploadedFile(FileValidationPipe) file?: Express.Multer.File,
-  ) {
-    const { accessToken, user: newUser } = await this.usersService.create(
-      user,
-      file,
-    );
+  ): Promise<AuthResponse> {
+    try {
+      const { accessToken, user: newUser } = await this.usersService.create(
+        user,
+        file,
+      );
 
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
 
-    return plainToInstance(userInfoDto, newUser);
+      return {
+        success: true,
+        message: 'User created successfully',
+        user: plainToInstance(userInfoDto, newUser),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 
   @SkipAuth()
@@ -69,18 +88,56 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Return access token and user info',
-    type: userInfoDto,
+    type: AuthResponse,
   })
-  async login(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const accessToken = await this.authService.login(req.user as User);
+  async login(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponse> {
+    try {
+      const accessToken = await this.authService.login(req.user as User);
 
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
 
-    return plainToInstance(userInfoDto, req['user']);
+      return {
+        success: true,
+        message: 'User logged in successfully',
+        user: plainToInstance(userInfoDto, req['user']),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  @SkipAuth()
+  @ApiOperation({ summary: 'reset password, send email with reset link' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'the endpoint will return 200 either the email is found or not',
+  })
+  @HttpCode(200)
+  @Post('forgot-password')
+  async resetPassword(@Body(ValidationPipe) payload: EmailPayload) {
+    return await this.authService.sendResetPassword(payload.email);
+  }
+
+  @SkipAuth()
+  @Post('reset-password')
+  async resetPasswordWithToken(
+    @Body(ValidationPipe) payload: ResetPasswordPayload,
+  ) {
+    return await this.authService.resetPassowrd(
+      payload.token,
+      payload.newPassword,
+    );
   }
 
   @Post('logout')
@@ -91,13 +148,15 @@ export class AuthController {
   })
   @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.cookie('accessToken', '', {
+    res.clearCookie('accessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
     return { message: 'Logout successful' };
   }
+
+  // ############## oauth strategies ##############
 
   @Get('42')
   @SkipAuth()
@@ -172,7 +231,7 @@ export class AuthController {
     return res.redirect(`${process.env.CLIENT_URL}/`);
   }
 
-  @Get('profile')
+  @Get('me')
   @ApiOperation({ summary: 'get user profile' })
   @ApiResponse({
     status: 200,

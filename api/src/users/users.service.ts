@@ -12,6 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { log } from 'node:console';
 
 @Injectable()
 export class UsersService {
@@ -25,9 +26,18 @@ export class UsersService {
     user: UserDto,
     file: Express.Multer.File,
   ): Promise<{ accessToken: string; user: User }> {
-    if (await this.usersRepository.findOneBy({ email: user.email }))
+    const emailSearch = await this.usersRepository.findOneBy({
+      email: user.email,
+      authType: 'local',
+    });
+    if (emailSearch)
       throw new ConflictException('User with this email already exists');
-    if (await this.usersRepository.findOneBy({ userName: user.userName }))
+    if (
+      await this.usersRepository.findOneBy({
+        userName: user.userName,
+        authType: 'local',
+      })
+    )
       throw new ConflictException('User with this username already exists');
 
     const newUser = this.usersRepository.create(user);
@@ -65,9 +75,13 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email: string): Promise<User> {
-    const user = await this.usersRepository.findOneBy({ email });
+  async findOneBy(query: object): Promise<User> {
+    const user = await this.usersRepository.findOneBy(query);
     return user;
+  }
+
+  async findManyBy(query: object): Promise<User[]> {
+    return await this.usersRepository.findBy(query);
   }
 
   async findByUserName(userName: string): Promise<User | null> {
@@ -106,6 +120,10 @@ export class UsersService {
     Object.assign(newUser, user);
     if (file && file.buffer) newUser.avatar = file.filename;
     return await this.usersRepository.save(newUser);
+  }
+
+  async saveUser(user: User) {
+    await this.usersRepository.save(user);
   }
 
   async updateAvatar(id: number, file: Express.Multer.File): Promise<string> {

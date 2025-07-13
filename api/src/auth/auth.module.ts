@@ -11,6 +11,7 @@ import { JwtGuard } from './guards/jwt.guard';
 import { FortyTwoStrategy } from './strategies/42.strategy';
 import { GoogleAuthStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
+import { MailsModule } from 'src/mails/mails.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { GithubStrategy } from './strategies/github.strategy';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
+    MailsModule,
   ],
   providers: [
     AuthService,

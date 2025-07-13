@@ -22,4 +22,7 @@ export class userInfoDto {
 
   @Exclude()
   password: string;
+
+  @Exclude()
+  resetToken: string;
 }

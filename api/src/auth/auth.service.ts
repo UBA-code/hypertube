@@ -1,19 +1,18 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/users/users.entity';
 import AuthLoginInfoDto from './dto/auth-login-info.dto';
+import { log } from 'console';
+import { MailsService } from 'src/mails/mails.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private mailService: MailsService,
   ) {}
 
   async login(user: User): Promise<string> {
@@ -51,6 +50,19 @@ export class AuthService {
     });
   }
 
+  async createResetToken(user: User) {
+    return await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        username: user.userName,
+      },
+      {
+        secret: process.env.JWT_RESET_PASSWORD_SECRET,
+        expiresIn: process.env.JWT_RESET_PASSWORD_EXPIRATION,
+      },
+    );
+  }
+
   async validateToken(token: string): Promise<boolean> {
     return (
       (await this.jwtService.verifyAsync(token, {
@@ -59,36 +71,51 @@ export class AuthService {
     );
   }
 
-  async createRefreshToken(user: User): Promise<string> {
-    return await this.jwtService.signAsync(
-      {
-        sub: user.id,
-        username: user.userName,
-      },
-      {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: process.env.JWT_REFRESH_EXPIRATION,
-      },
+  async validateResetToken(token: string): Promise<boolean> {
+    return (
+      (await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_RESET_PASSWORD_SECRET,
+      })) !== null
     );
   }
 
-  async refreshToken(token: string): Promise<{ accessToken: string }> {
-    try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_REFRESH_SECRET,
-      });
-      const user = await this.usersService.findByUserName(payload.username);
-
-      if (!user) {
-        throw new UnauthorizedException();
-      }
-
-      const newPayload = { username: user.userName, sub: user.id };
-      return {
-        accessToken: await this.jwtService.signAsync(newPayload),
-      };
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+  async sendResetPassword(email: string) {
+    const foundUsers = await this.usersService.findManyBy({
+      email: email,
+      authType: 'local',
+    });
+    if (!foundUsers.length) {
+      log(`no users found with email ${email}`);
+      return;
     }
+    const user = foundUsers[0];
+
+    const resetToken = await this.createResetToken(user);
+
+    user.resetToken = resetToken;
+    await this.usersService.saveUser(user);
+    log(`sending email to ${user.email}`);
+    await this.mailService.sendResetPasswordEmail(user.email, resetToken);
+  }
+
+  async resetPassowrd(token: string, newPassword: string) {
+    if (!(await this.validateResetToken(token)))
+      throw new BadRequestException('Invalid token');
+    const { sub } = await this.jwtService.decode(token);
+    const user = await this.usersService.findOneBy({
+      id: sub,
+      authType: 'local',
+    });
+    if (!user) {
+      log(`no users found with id ${sub}`);
+      return;
+    }
+    user.password = await this.usersService.hashPassword(newPassword);
+    user.resetToken = '';
+    await this.usersService.saveUser(user);
+    log(
+      `user ${user.userName} with email ${user.email} is change it's password`,
+    );
+    return { message: 'password changed successfuly' };
   }
 }
