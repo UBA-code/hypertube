@@ -13,14 +13,18 @@ import {
 import { AuthService } from './auth.service';
 import { UsersService } from 'src/users/users.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { File, FileInterceptor } from '@nest-lab/fastify-multer';
 import { UserDto } from 'src/users/dto/user.dto';
 import { LocalGuard } from './guards/local.guard';
-
 import { userInfoDto } from 'src/users/dto/user-info.dto';
 import { plainToInstance } from 'class-transformer';
 import { SkipAuth } from './decorators/skip-auth.decorator';
-import { FastifyReply, FastifyRequest as Request } from 'fastify';
+import { FortyTwoGuard } from './guards/42.guard';
+import { Request, Response } from 'express';
+import { User } from 'src/users/users.entity';
+import { FileValidationPipe } from 'src/pipes/FileValidationPipe';
+import { UploadInterceptor } from 'src/interceptors/upload-interceptor';
+import { GoogleGuard } from './guards/google.guard';
+import { GithubGuard } from './guards/github.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -37,18 +41,18 @@ export class AuthController {
     description: 'Return created user',
     type: userInfoDto,
   })
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(UploadInterceptor('avatar'))
   async createUser(
-    @Res({ passthrough: true }) res: FastifyReply,
+    @Res({ passthrough: true }) res: Response,
     @Body() user: UserDto,
-    @UploadedFile() file?: File,
+    @UploadedFile(FileValidationPipe) file?: Express.Multer.File,
   ) {
     const { accessToken, user: newUser } = await this.usersService.create(
       user,
       file,
     );
 
-    res.setCookie('accessToken', accessToken, {
+    res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -67,13 +71,10 @@ export class AuthController {
     description: 'Return access token and user info',
     type: userInfoDto,
   })
-  async login(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: FastifyReply,
-  ) {
-    const accessToken = await this.authService.login(req['user']);
+  async login(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const accessToken = await this.authService.login(req.user as User);
 
-    res.setCookie('accessToken', accessToken, {
+    res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -89,13 +90,86 @@ export class AuthController {
     description: 'Logout successful',
   })
   @HttpCode(200)
-  async logout(@Res({ passthrough: true }) res: FastifyReply) {
-    res.setCookie('accessToken', '', {
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.cookie('accessToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
     return { message: 'Logout successful' };
+  }
+
+  @Get('42')
+  @SkipAuth()
+  @UseGuards(FortyTwoGuard)
+  @ApiOperation({
+    summary: 'login with 42, redirect to / after authentication',
+  })
+  async fortyTwoAuth() {}
+
+  @Get('42/redirect')
+  @SkipAuth()
+  @UseGuards(FortyTwoGuard)
+  async fortyTwoAuthCallback(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.cookie('accessToken', req['user']['accessToken'], {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return res.redirect(`${process.env.CLIENT_URL}/`);
+  }
+
+  @Get('google')
+  @SkipAuth()
+  @UseGuards(GoogleGuard)
+  @ApiOperation({
+    summary: 'login with google, redirect to / after authentication',
+  })
+  async GoogleAuth() {}
+
+  @Get('google/redirect')
+  @SkipAuth()
+  @UseGuards(GoogleGuard)
+  async GoogleAuthCallback(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.cookie('accessToken', req['user']['accessToken'], {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return res.redirect(`${process.env.CLIENT_URL}/`);
+  }
+
+  @Get('github')
+  @SkipAuth()
+  @UseGuards(GithubGuard)
+  @ApiOperation({
+    summary: 'login with github, redirect to / after authentication',
+  })
+  async GithubAuth() {}
+
+  @Get('github/redirect')
+  @SkipAuth()
+  @UseGuards(GithubGuard)
+  async GithubAuthCallback(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    console.log(req);
+    res.cookie('accessToken', req['user']['accessToken'], {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return res.redirect(`${process.env.CLIENT_URL}/`);
   }
 
   @Get('profile')

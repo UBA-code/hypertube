@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN yarn
+RUN npm i
 
 COPY . .
 
-CMD ["yarn", "start:dev"]
+CMD ["npm", "run", "start:dev"]

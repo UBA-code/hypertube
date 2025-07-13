@@ -5,17 +5,16 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Post,
   Put,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserPublicDataDto } from './dto/public-user.dto';
-import { File, FileInterceptor } from '@nest-lab/fastify-multer';
+import { FileValidationPipe } from 'src/pipes/FileValidationPipe';
+import { UploadInterceptor } from 'src/interceptors/upload-interceptor';
 
 @ApiTags('Users')
 @Controller('users')
@@ -73,12 +72,12 @@ export class UsersController {
     description: 'return updated user',
     type: UserPublicDataDto,
   })
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(UploadInterceptor('avatar'))
   @Put(':id')
   async updateUserById(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
-    @UploadedFile() file?: File,
+    @UploadedFile(FileValidationPipe) file: Express.Multer.File,
   ) {
     return await this.usersServive.update(id, updateUserDto, file);
   }
@@ -92,9 +91,9 @@ export class UsersController {
     description: 'return a string if the avatar was updated successfully',
   })
   @Put(':id/avatar')
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(UploadInterceptor('avatar'))
   async updateUserAvatar(
-    @UploadedFile() file: File,
+    @UploadedFile(FileValidationPipe) file: Express.Multer.File,
     @Param('id', ParseIntPipe) id: number,
   ) {
     return await this.usersServive.updateAvatar(id, file);

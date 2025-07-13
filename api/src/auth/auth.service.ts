@@ -41,10 +41,22 @@ export class AuthService {
   }
 
   async createAccessToken(user: User): Promise<string> {
+    console.log('='.repeat(50));
+    console.log(
+      `creating token with user ${user.id} and username ${user.userName}`,
+    );
     return await this.jwtService.signAsync({
       sub: user.id,
       username: user.userName,
     });
+  }
+
+  async validateToken(token: string): Promise<boolean> {
+    return (
+      (await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_ACCESS_SECRET,
+      })) !== null
+    );
   }
 
   async createRefreshToken(user: User): Promise<string> {

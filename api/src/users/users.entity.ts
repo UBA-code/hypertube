@@ -6,7 +6,7 @@ export class User {
   id: number;
   @Column({ default: 'https://www.pngmart.com/files/23/Profile-PNG-Photo.png' })
   avatar: string;
-  @Column({ unique: true })
+  @Column()
   email: string;
   @Column({ unique: true })
   userName: string;
@@ -16,4 +16,6 @@ export class User {
   firstName: string;
   @Column()
   password: string;
+  @Column()
+  authType: 'local' | '42' | 'google' | 'github';
 }
