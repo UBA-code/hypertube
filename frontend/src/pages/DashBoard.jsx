@@ -6,492 +6,534 @@ import {
   FaHeart,
   FaRegHeart,
   FaHistory,
-  FaUser,
+  FaUserCircle,
+  FaBell,
   FaCog,
   FaSignOutAlt,
-  FaDownload,
 } from "react-icons/fa";
-import { MdMovie, MdLocalMovies, MdWhatshot } from "react-icons/md";
+import { MdLocalMovies, MdDownload, MdTrendingUp } from "react-icons/md";
+import { RiMovie2Line } from "react-icons/ri";
+
+// Mock API service that returns promises with data matching your plan structure
+import {
+  getPopularMovies,
+  getWatchedMovies,
+  getCurrentUser,
+} from "../services/server";
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("home");
+  const [loading, setLoading] = useState(true);
+  const [popularMovies, setPopularMovies] = useState([]);
+  const [watchedMovies, setWatchedMovies] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [user, setUser] = useState({
-    id: "1",
-    username: "movie_lover",
-    firstName: "Alex",
-    lastName: "Johnson",
-    email: "alex@example.com",
-    profilePicture: null,
-    preferredLanguage: "en",
-    createdAt: "2023-01-15",
-    lastActive: new Date(),
-    watchedMovies: ["1", "2", "3"],
-  });
-
-  const [movies, setMovies] = useState([
-    {
-      id: "1",
-      title: "Inception",
-      year: 2010,
-      imdbRating: 8.8,
-      genres: ["Sci-Fi", "Action", "Thriller"],
-      duration: 148,
-      coverImage:
-        "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_.jpg",
-      downloadStatus: "completed",
-      lastWatched: "2023-08-20T14:30:00Z",
-      progress: 65,
-    },
-    {
-      id: "2",
-      title: "The Dark Knight",
-      year: 2008,
-      imdbRating: 9.0,
-      genres: ["Action", "Crime", "Drama"],
-      duration: 152,
-      coverImage:
-        "https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_.jpg",
-      downloadStatus: "not_started",
-    },
-    {
-      id: "3",
-      title: "Interstellar",
-      year: 2014,
-      imdbRating: 8.6,
-      genres: ["Adventure", "Drama", "Sci-Fi"],
-      duration: 169,
-      coverImage:
-        "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
-      downloadStatus: "downloading",
-      progress: 42,
-    },
-    {
-      id: "4",
-      title: "Pulp Fiction",
-      year: 1994,
-      imdbRating: 8.9,
-      genres: ["Crime", "Drama"],
-      duration: 154,
-      coverImage:
-        "https://m.media-amazon.com/images/M/MV5BNGNhMDIzZTUtNTBlZi00MTRlLWFjM2ItYzViMjE3YzI5MjljXkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_.jpg",
-      downloadStatus: "not_started",
-    },
-    {
-      id: "5",
-      title: "The Matrix",
-      year: 1999,
-      imdbRating: 8.7,
-      genres: ["Action", "Sci-Fi"],
-      duration: 136,
-      coverImage:
-        "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg",
-      downloadStatus: "not_started",
-    },
-    {
-      id: "6",
-      title: "Parasite",
-      year: 2019,
-      imdbRating: 8.6,
-      genres: ["Comedy", "Drama", "Thriller"],
-      duration: 132,
-      coverImage:
-        "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_.jpg",
-      downloadStatus: "completed",
-    },
-  ]);
-
-  const [favorites, setFavorites] = useState(["1", "3"]);
-  const [continueWatching, setContinueWatching] = useState([]);
+  const [activeTab, setActiveTab] = useState("popular");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Filter movies that are in progress or partially watched
-    const watching = movies.filter(
-      (movie) =>
-        movie.downloadStatus === "downloading" ||
-        (movie.progress && movie.progress > 0 && movie.progress < 100)
-    );
-    setContinueWatching(watching);
-  }, [movies]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // Implement search functionality
-    console.log("Searching for:", searchQuery);
-  };
+        // Fetch all data simultaneously
+        const [popular, watched, user] = await Promise.all([
+          getPopularMovies(),
+          getWatchedMovies(),
+          getCurrentUser(),
+        ]);
 
-  const toggleFavorite = (movieId) => {
-    if (favorites.includes(movieId)) {
-      setFavorites(favorites.filter((id) => id !== movieId));
-    } else {
-      setFavorites([...favorites, movieId]);
-    }
-  };
+        setPopularMovies(popular);
+        setWatchedMovies(watched);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const startStreaming = (movieId) => {
-    // Implement streaming functionality
-    console.log("Starting stream for movie:", movieId);
-  };
+    fetchData();
+  }, []);
 
-  const startDownload = (movieId) => {
-    // Implement download functionality
-    console.log("Starting download for movie:", movieId);
-    setMovies(
-      movies.map((movie) =>
-        movie.id === movieId
-          ? { ...movie, downloadStatus: "downloading", progress: 0 }
-          : movie
-      )
-    );
-  };
+  // Filter movies based on search query
+  const filteredMovies = popularMovies.filter((movie) =>
+    movie.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const renderMovieCard = (movie) => (
-    <div
-      key={movie.id}
-      className="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-    >
-      <div className="relative">
-        <img
-          src={movie.coverImage}
-          alt={movie.title}
-          className="w-full h-48 object-cover"
-        />
-        <div className="absolute top-2 right-2">
-          <button
-            onClick={() => toggleFavorite(movie.id)}
-            className="bg-gray-900 bg-opacity-70 p-2 rounded-full hover:bg-red-600 transition"
-          >
-            {favorites.includes(movie.id) ? (
-              <FaHeart className="text-red-500" />
-            ) : (
-              <FaRegHeart className="text-white" />
-            )}
-          </button>
+  // Render loading skeleton
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gray-900 text-white">
+        {/* Sidebar Skeleton */}
+        <div className="w-64 bg-gray-800 p-4 hidden md:block">
+          <div className="animate-pulse flex flex-col space-y-8">
+            <div className="h-12 bg-gray-700 rounded"></div>
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-8 bg-gray-700 rounded"></div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {movie.downloadStatus === "downloading" && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gray-900 bg-opacity-80 p-2">
-            <div className="w-full bg-gray-700 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full"
-                style={{ width: `${movie.progress}%` }}
-              ></div>
+        {/* Main Content Skeleton */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {/* Search Bar Skeleton */}
+          <div className="animate-pulse mb-8">
+            <div className="h-12 bg-gray-800 rounded-lg"></div>
+          </div>
+
+          {/* Section Headers */}
+          <div className="space-y-12">
+            {[...Array(3)].map((_, i) => (
+              <div key={i}>
+                <div className="animate-pulse mb-6">
+                  <div className="h-8 w-64 bg-gray-800 rounded"></div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                  {[...Array(5)].map((_, j) => (
+                    <div key={j} className="animate-pulse">
+                      <div className="aspect-[2/3] bg-gray-800 rounded-lg mb-2"></div>
+                      <div className="h-4 bg-gray-800 rounded w-3/4 mb-1"></div>
+                      <div className="h-3 bg-gray-800 rounded w-1/2"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-900 text-white">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-800 p-4 hidden md:flex flex-col">
+        <div className="flex items-center space-x-3 mb-10 mt-2">
+          <RiMovie2Line className="text-red-500 text-3xl" />
+          <h1 className="text-2xl font-bold">Hypertube</h1>
+        </div>
+
+        <div className="mb-8 flex items-center space-x-3 p-3 bg-gray-700 rounded-lg">
+          {currentUser?.profilePicture ? (
+            <img
+              src={currentUser.profilePicture}
+              alt={currentUser.username}
+              className="w-10 h-10 rounded-full"
+            />
+          ) : (
+            <FaUserCircle className="text-gray-400 text-3xl" />
+          )}
+          <div>
+            <p className="font-semibold">{currentUser?.username}</p>
+            <p className="text-sm text-gray-400">Premium Member</p>
+          </div>
+        </div>
+
+        <nav className="flex-1">
+          <ul className="space-y-2">
+            <li>
+              <button
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
+                  activeTab === "popular" ? "bg-red-600" : "hover:bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("popular")}
+              >
+                <MdTrendingUp className="text-xl" />
+                <span>Popular Movies</span>
+              </button>
+            </li>
+            <li>
+              <button
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
+                  activeTab === "watched" ? "bg-red-600" : "hover:bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("watched")}
+              >
+                <FaHistory className="text-xl" />
+                <span>Watch History</span>
+              </button>
+            </li>
+            <li>
+              <button
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
+                  activeTab === "library" ? "bg-red-600" : "hover:bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("library")}
+              >
+                <MdLocalMovies className="text-xl" />
+                <span>My Library</span>
+              </button>
+            </li>
+            <li>
+              <button
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
+                  activeTab === "downloads" ? "bg-red-600" : "hover:bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("downloads")}
+              >
+                <MdDownload className="text-xl" />
+                <span>Downloads</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+
+        <div className="mt-auto pt-4 border-t border-gray-700">
+          <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition">
+            <FaCog className="text-xl" />
+            <span>Settings</span>
+          </button>
+          <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition">
+            <FaSignOutAlt className="text-xl" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center md:hidden">
+            <button
+              className="mr-4 text-xl"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              ☰
+            </button>
+            <RiMovie2Line className="text-red-500 text-2xl mr-2" />
+            <h1 className="text-xl font-bold">Hypertube</h1>
+          </div>
+
+          <div className="relative w-full max-w-md">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <FaSearch />
             </div>
-            <div className="text-xs text-center mt-1">
-              Downloading {movie.progress}%
+            <input
+              type="text"
+              placeholder="Search movies..."
+              className="w-full pl-10 pr-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="hidden md:flex items-center space-x-4 ml-4">
+            <button className="relative p-2 rounded-full hover:bg-gray-800">
+              <FaBell className="text-xl" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            {currentUser?.profilePicture ? (
+              <img
+                src={currentUser.profilePicture}
+                alt={currentUser.username}
+                className="w-10 h-10 rounded-full"
+              />
+            ) : (
+              <FaUserCircle className="text-gray-400 text-3xl" />
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-gray-800 p-4 mb-6 rounded-lg">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                className={`p-3 rounded-lg transition ${
+                  activeTab === "popular" ? "bg-red-600" : "bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("popular")}
+              >
+                Popular
+              </button>
+              <button
+                className={`p-3 rounded-lg transition ${
+                  activeTab === "watched" ? "bg-red-600" : "bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("watched")}
+              >
+                History
+              </button>
+              <button
+                className={`p-3 rounded-lg transition ${
+                  activeTab === "library" ? "bg-red-600" : "bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("library")}
+              >
+                Library
+              </button>
+              <button
+                className={`p-3 rounded-lg transition ${
+                  activeTab === "downloads" ? "bg-red-600" : "bg-gray-700"
+                }`}
+                onClick={() => setActiveTab("downloads")}
+              >
+                Downloads
+              </button>
             </div>
+          </div>
+        )}
+
+        {/* Welcome Message */}
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Welcome back,{" "}
+            <span className="text-red-500">
+              {currentUser?.firstName || currentUser?.username}
+            </span>
+          </h1>
+          <p className="text-gray-400">Ready to continue your movie journey?</p>
+        </div>
+
+        {/* Continue Watching Section */}
+        {watchedMovies.length > 0 && activeTab === "popular" && (
+          <section className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center">
+                <FaHistory className="mr-2 text-red-500" />
+                Continue Watching
+              </h2>
+              <button className="text-gray-400 hover:text-white transition">
+                View All
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {watchedMovies.slice(0, 5).map((movie) => (
+                <MovieCard key={movie.id} movie={movie} type="watched" />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Popular Movies Section */}
+        {activeTab === "popular" && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center">
+                <MdTrendingUp className="mr-2 text-red-500" />
+                Popular Movies
+              </h2>
+              <div className="flex space-x-2">
+                <button className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition">
+                  Movies
+                </button>
+                <button className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition">
+                  TV Shows
+                </button>
+              </div>
+            </div>
+
+            {filteredMovies.length === 0 ? (
+              <div className="text-center py-12">
+                <FaSearch className="mx-auto text-4xl text-gray-600 mb-4" />
+                <h3 className="text-xl font-bold">No movies found</h3>
+                <p className="text-gray-500">Try adjusting your search query</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {filteredMovies.map((movie) => (
+                  <MovieCard key={movie.id} movie={movie} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Watched Movies Section */}
+        {activeTab === "watched" && (
+          <section>
+            <h2 className="text-xl font-bold mb-6 flex items-center">
+              <FaHistory className="mr-2 text-red-500" />
+              Your Watch History
+            </h2>
+
+            {watchedMovies.length === 0 ? (
+              <div className="text-center py-12">
+                <MdLocalMovies className="mx-auto text-4xl text-gray-600 mb-4" />
+                <h3 className="text-xl font-bold">No watched movies yet</h3>
+                <p className="text-gray-500">
+                  Start watching movies to see them here
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {watchedMovies.map((movie) => (
+                  <WatchedMovieItem key={movie.id} movie={movie} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* My Library Section */}
+        {activeTab === "library" && (
+          <section>
+            <h2 className="text-xl font-bold mb-6 flex items-center">
+              <MdLocalMovies className="mr-2 text-red-500" />
+              Your Movie Library
+            </h2>
+
+            <div className="bg-gray-800 rounded-lg p-6 text-center">
+              <MdLocalMovies className="mx-auto text-4xl text-gray-600 mb-4" />
+              <h3 className="text-xl font-bold">Your library is empty</h3>
+              <p className="text-gray-500 mb-4">
+                Add movies to your library to watch later
+              </p>
+              <button className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition">
+                Browse Movies
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Downloads Section */}
+        {activeTab === "downloads" && (
+          <section>
+            <h2 className="text-xl font-bold mb-6 flex items-center">
+              <MdDownload className="mr-2 text-red-500" />
+              Your Downloads
+            </h2>
+
+            <div className="bg-gray-800 rounded-lg p-6 text-center">
+              <MdDownload className="mx-auto text-4xl text-gray-600 mb-4" />
+              <h3 className="text-xl font-bold">No downloads yet</h3>
+              <p className="text-gray-500 mb-4">
+                Download movies to watch offline
+              </p>
+              <button className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition">
+                Find Movies to Download
+              </button>
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Movie Card Component
+const MovieCard = ({ movie, type = "standard" }) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  return (
+    <div className="group relative">
+      <div className="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden relative">
+        {movie.coverImage ? (
+          <img
+            src={movie.coverImage}
+            alt={movie.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+            <RiMovie2Line className="text-4xl text-gray-500" />
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <div className="flex justify-between items-center">
+              <button className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition">
+                <FaPlay className="ml-1" />
+              </button>
+
+              <button
+                className="w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
+                onClick={() => setIsFavorite(!isFavorite)}
+              >
+                {isFavorite ? (
+                  <FaHeart className="text-red-500" />
+                ) : (
+                  <FaRegHeart className="text-white" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {type === "watched" && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
+            <div
+              className="h-full bg-red-500"
+              style={{ width: `${Math.floor(Math.random() * 60) + 40}%` }}
+            ></div>
+          </div>
+        )}
+
+        {movie.imdbRating && (
+          <div className="absolute top-2 right-2 bg-yellow-600 text-xs font-bold px-2 py-1 rounded">
+            {movie.imdbRating}
           </div>
         )}
       </div>
 
-      <div className="p-4">
-        <h3 className="font-bold text-lg truncate">{movie.title}</h3>
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-gray-400">{movie.year}</span>
-          <div className="flex items-center bg-yellow-600 px-2 py-1 rounded">
-            <span className="text-xs font-bold">{movie.imdbRating}</span>
-            <span className="text-xs ml-1">IMDb</span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-1 mt-3">
-          {movie.genres.slice(0, 2).map((genre, idx) => (
-            <span
-              key={idx}
-              className="text-xs bg-gray-700 px-2 py-1 rounded-full"
-            >
-              {genre}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex mt-4 space-x-2">
-          {movie.downloadStatus === "completed" ? (
-            <button
-              onClick={() => startStreaming(movie.id)}
-              className="flex-1 bg-gradient-to-r from-red-600 to-purple-600 hover:opacity-90 py-2 rounded-lg flex items-center justify-center"
-            >
-              <FaPlay className="mr-2" /> Play
-            </button>
-          ) : (
-            <button
-              onClick={() => startDownload(movie.id)}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-teal-500 hover:opacity-90 py-2 rounded-lg flex items-center justify-center"
-            >
-              <FaDownload className="mr-2" /> Download
-            </button>
-          )}
+      <div className="mt-3">
+        <h3 className="font-semibold truncate">{movie.title}</h3>
+        <div className="flex justify-between text-sm text-gray-400">
+          <span>{movie.year}</span>
+          <span className="flex items-center">
+            <MdDownload className="mr-1" />
+            {movie.torrents?.[0]?.size || "1.2 GB"}
+          </span>
         </div>
       </div>
     </div>
   );
+};
+
+// Watched Movie Item Component
+const WatchedMovieItem = ({ movie }) => {
+  const progress = Math.floor(Math.random() * 60) + 40;
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 p-4 hidden md:block">
-        <div className="flex items-center mb-8">
-          <div className="bg-gradient-to-r from-red-600 to-purple-600 p-2 rounded-lg">
-            <MdMovie className="text-2xl" />
+    <div className="flex items-center bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition">
+      <div className="w-24 h-24 flex-shrink-0">
+        {movie.coverImage ? (
+          <img
+            src={movie.coverImage}
+            alt={movie.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+            <RiMovie2Line className="text-2xl text-gray-500" />
           </div>
-          <h1 className="text-xl font-bold ml-2">Hypertube</h1>
-        </div>
-
-        <div className="mb-8 flex items-center space-x-3 p-3 bg-gray-700 rounded-lg">
-          <div className="bg-gray-600 border-2 border-dashed rounded-xl w-16 h-16" />
-          <div>
-            <h2 className="font-bold">
-              {user.firstName} {user.lastName}
-            </h2>
-            <p className="text-sm text-gray-400">@{user.username}</p>
-          </div>
-        </div>
-
-        <nav className="space-y-2">
-          <button
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg ${
-              activeTab === "home"
-                ? "bg-gradient-to-r from-red-600 to-purple-600"
-                : "hover:bg-gray-700"
-            }`}
-            onClick={() => setActiveTab("home")}
-          >
-            <MdWhatshot className="text-xl" />
-            <span>Home</span>
-          </button>
-
-          <button
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg ${
-              activeTab === "browse"
-                ? "bg-gradient-to-r from-red-600 to-purple-600"
-                : "hover:bg-gray-700"
-            }`}
-            onClick={() => setActiveTab("browse")}
-          >
-            <MdLocalMovies className="text-xl" />
-            <span>Browse Movies</span>
-          </button>
-
-          <button
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg ${
-              activeTab === "library"
-                ? "bg-gradient-to-r from-red-600 to-purple-600"
-                : "hover:bg-gray-700"
-            }`}
-            onClick={() => setActiveTab("library")}
-          >
-            <FaHistory className="text-xl" />
-            <span>My Library</span>
-          </button>
-
-          <button
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg ${
-              activeTab === "favorites"
-                ? "bg-gradient-to-r from-red-600 to-purple-600"
-                : "hover:bg-gray-700"
-            }`}
-            onClick={() => setActiveTab("favorites")}
-          >
-            <FaHeart className="text-xl" />
-            <span>Favorites</span>
-          </button>
-
-          <div className="border-t border-gray-700 my-4"></div>
-
-          <button
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg ${
-              activeTab === "profile"
-                ? "bg-gradient-to-r from-red-600 to-purple-600"
-                : "hover:bg-gray-700"
-            }`}
-            onClick={() => setActiveTab("profile")}
-          >
-            <FaUser className="text-xl" />
-            <span>Profile</span>
-          </button>
-
-          <button
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg ${
-              activeTab === "settings"
-                ? "bg-gradient-to-r from-red-600 to-purple-600"
-                : "hover:bg-gray-700"
-            }`}
-            onClick={() => setActiveTab("settings")}
-          >
-            <FaCog className="text-xl" />
-            <span>Settings</span>
-          </button>
-
-          <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700">
-            <FaSignOutAlt className="text-xl" />
-            <span>Logout</span>
-          </button>
-        </nav>
+        )}
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Top Navigation */}
-        <div className="bg-gray-800 p-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <button className="md:hidden mr-4 text-xl">☰</button>
-            <h1 className="text-xl font-bold">
-              {activeTab === "home" && "Home"}
-              {activeTab === "browse" && "Browse Movies"}
-              {activeTab === "library" && "My Library"}
-              {activeTab === "favorites" && "Favorites"}
-              {activeTab === "profile" && "Profile"}
-              {activeTab === "settings" && "Settings"}
-            </h1>
-          </div>
-
-          <form onSubmit={handleSearch} className="flex-1 max-w-md">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search movies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-700 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-purple-600"
-              />
-              <FaSearch className="absolute left-3 top-2.5 text-gray-400" />
-            </div>
-          </form>
-
-          <div className="flex items-center space-x-4 ml-4">
-            <div className="relative">
-              <button className="bg-gray-700 p-2 rounded-full">
-                <FaHeart className="text-red-500" />
-              </button>
-              <span className="absolute -top-1 -right-1 bg-red-600 text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                3
-              </span>
-            </div>
-            <div className="bg-gray-600 border-2 border-dashed rounded-xl w-10 h-10" />
-          </div>
+      <div className="flex-1 p-4">
+        <div className="flex justify-between">
+          <h3 className="font-bold">{movie.title}</h3>
+          <span className="text-gray-400">
+            {movie.duration
+              ? `${Math.floor(movie.duration / 60)}h ${movie.duration % 60}m`
+              : "2h 15m"}
+          </span>
         </div>
 
-        {/* Dashboard Content */}
-        <div className="p-6">
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-purple-900 to-red-900 rounded-2xl p-6 mb-8">
-            <h2 className="text-2xl font-bold">
-              Welcome back, {user.firstName}!
-            </h2>
-            <p className="text-gray-300 mt-2">
-              Ready to continue your movie journey? Pick up where you left off
-              or discover new favorites.
-            </p>
-            <button className="mt-4 bg-white text-gray-900 px-6 py-2 rounded-full font-medium hover:bg-opacity-90 transition">
-              Explore Movies
-            </button>
-          </div>
+        <div className="text-sm text-gray-400 mb-2">
+          {movie.genres.slice(0, 3).join(", ")} • {movie.year}
+        </div>
 
-          {/* Continue Watching */}
-          {continueWatching.length > 0 && (
-            <div className="mb-10">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Continue Watching</h3>
-                <button className="text-gray-400 hover:text-white">
-                  View All
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {continueWatching.map((movie) => (
-                  <div
-                    key={movie.id}
-                    className="bg-gray-800 rounded-xl overflow-hidden"
-                  >
-                    <div className="relative">
-                      <img
-                        src={movie.coverImage}
-                        alt={movie.title}
-                        className="w-full h-40 object-cover"
-                      />
-                      {movie.progress && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gray-900 bg-opacity-80">
-                          <div className="w-full bg-gray-700 h-1.5">
-                            <div
-                              className="bg-red-600 h-1.5"
-                              style={{ width: `${movie.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-bold truncate">{movie.title}</h4>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm text-gray-400">
-                          {movie.duration} min
-                        </span>
-                        <button
-                          onClick={() => startStreaming(movie.id)}
-                          className="bg-gradient-to-r from-red-600 to-purple-600 p-2 rounded-full hover:opacity-90"
-                        >
-                          <FaPlay />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Popular Movies */}
-          <div className="mb-10">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Popular Movies</h3>
-              <button className="text-gray-400 hover:text-white">
-                View All
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {movies.slice(0, 5).map(renderMovieCard)}
-            </div>
+        <div className="flex items-center">
+          <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+            <div
+              className="h-full bg-red-500"
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
-
-          {/* Recently Added */}
-          <div className="mb-10">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Recently Added</h3>
-              <button className="text-gray-400 hover:text-white">
-                View All
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {movies.slice(2, 7).map(renderMovieCard)}
-            </div>
-          </div>
-
-          {/* Your Favorites */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Your Favorites</h3>
-              <button className="text-gray-400 hover:text-white">
-                View All
-              </button>
-            </div>
-            {favorites.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {movies
-                  .filter((movie) => favorites.includes(movie.id))
-                  .slice(0, 4)
-                  .map(renderMovieCard)}
-              </div>
-            ) : (
-              <div className="bg-gray-800 rounded-xl p-8 text-center">
-                <FaHeart className="text-4xl mx-auto text-gray-600" />
-                <h4 className="text-xl font-bold mt-4">No favorites yet</h4>
-                <p className="text-gray-500 mt-2">
-                  Click the heart icon on any movie to add it to your favorites
-                </p>
-              </div>
-            )}
-          </div>
+          <span className="text-sm">{progress}%</span>
         </div>
       </div>
+
+      <button className="mr-4 w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition">
+        <FaPlay className="ml-1" />
+      </button>
     </div>
   );
 };
