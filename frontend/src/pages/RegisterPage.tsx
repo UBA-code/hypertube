@@ -1,0 +1,150 @@
+import React, { useState } from "react";
+import { FaPlay, FaArrowLeft } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import RegisterForm from "../components/RegisterForm";
+import SocialAuthButtons from "../components/SocialAuthButtons";
+
+const RegisterPage: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleEmailRegister = async (userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  }) => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement email registration logic
+      console.log("Email registration:", userData);
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      alert(
+        "Registration successful! Please check your email to verify your account."
+      );
+    } catch (error) {
+      console.error("Registration failed:", error);
+      alert("Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGithubAuth = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement GitHub OAuth
+      console.log("GitHub OAuth initiated");
+      window.location.href = "/auth/github";
+    } catch (error) {
+      console.error("GitHub auth failed:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement Google OAuth
+      console.log("Google OAuth initiated");
+      window.location.href = "/auth/google";
+    } catch (error) {
+      console.error("Google auth failed:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const handle42Auth = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement 42 OAuth
+      console.log("42 OAuth initiated");
+      window.location.href = "/auth/42";
+    } catch (error) {
+      console.error("42 auth failed:", error);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
+        <Link to="/" className="flex items-center space-x-2">
+          <FaPlay className="text-red-600 text-3xl" />
+          <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-purple-600 bg-clip-text text-transparent">
+            Hypertube
+          </span>
+        </Link>
+        <Link
+          to="/"
+          className="flex items-center space-x-2 text-gray-400 hover:text-white transition"
+        >
+          <FaArrowLeft />
+          <span>Back to Home</span>
+        </Link>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-2xl">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold mb-2">Create Account</h1>
+              <p className="text-gray-400">
+                Join Hypertube and start streaming
+              </p>
+            </div>
+
+            {/* Social Auth Buttons */}
+            <SocialAuthButtons
+              isLoading={isLoading}
+              onGithubAuth={handleGithubAuth}
+              onGoogleAuth={handleGoogleAuth}
+              on42Auth={handle42Auth}
+            />
+
+            {/* Divider */}
+            <div className="flex items-center my-6">
+              <div className="flex-1 border-t border-gray-700"></div>
+              <span className="px-4 text-gray-400 text-sm">or</span>
+              <div className="flex-1 border-t border-gray-700"></div>
+            </div>
+
+            {/* Email Registration Form */}
+            <RegisterForm
+              onSubmit={handleEmailRegister}
+              isLoading={isLoading}
+            />
+
+            {/* Footer Links */}
+            <div className="mt-6 text-center">
+              <p className="text-gray-400 text-sm">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="text-red-500 hover:text-red-400 transition"
+                >
+                  Sign in
+                </Link>
+              </p>
+              <p className="text-gray-500 text-xs mt-4">
+                By creating an account, you agree to our{" "}
+                <Link to="/terms" className="text-red-500 hover:text-red-400">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="text-red-500 hover:text-red-400">
+                  Privacy Policy
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default RegisterPage;
