@@ -12,6 +12,7 @@ import { FortyTwoStrategy } from './strategies/42.strategy';
 import { GoogleAuthStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
 import { MailsModule } from 'src/mails/mails.module';
+import { RevokedTokensModule } from 'src/revoked-tokens/revoked-tokens.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MailsModule } from 'src/mails/mails.module';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
     MailsModule,
+    RevokedTokensModule,
   ],
   providers: [
     AuthService,

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -6,6 +10,7 @@ import { User } from 'src/users/users.entity';
 import AuthLoginInfoDto from './dto/auth-login-info.dto';
 import { log } from 'console';
 import { MailsService } from 'src/mails/mails.service';
+import { RevokedTokensService } from 'src/revoked-tokens/revoked-tokens.service';
 
 @Injectable()
 export class AuthService {
@@ -13,10 +18,33 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private mailService: MailsService,
+    private revokedTokensService: RevokedTokensService,
   ) {}
 
   async login(user: User): Promise<string> {
     return await this.createAccessToken(user);
+  }
+
+  async logout(userId: number, token: string) {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['revokedTokens'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const decodedToken = await this.decodeToken(token);
+
+    const revokedToken = this.revokedTokensService.createRevokedToken({
+      user,
+      token,
+      type: 'accessToken',
+      expiredAt: new Date(decodedToken.exp * 1000), // date constructor takes milliseconds
+    });
+
+    await this.revokedTokensService.saveRevokedToken(revokedToken);
   }
 
   /**
@@ -63,6 +91,10 @@ export class AuthService {
     );
   }
 
+  async decodeToken(token: string): Promise<any> {
+    return await this.jwtService.decode(token);
+  }
+
   async validateToken(token: string): Promise<boolean> {
     return (
       (await this.jwtService.verifyAsync(token, {
@@ -92,7 +124,6 @@ export class AuthService {
 
     const resetToken = await this.createResetToken(user);
 
-    user.resetToken = resetToken;
     await this.usersService.saveUser(user);
     log(`sending email to ${user.email}`);
     await this.mailService.sendResetPasswordEmail(user.email, resetToken);
@@ -110,8 +141,18 @@ export class AuthService {
       log(`no users found with id ${sub}`);
       return;
     }
+    const decodedToken = await this.jwtService.decode(token);
+
     user.password = await this.usersService.hashPassword(newPassword);
-    user.resetToken = '';
+
+    const revokedToken = this.revokedTokensService.createRevokedToken({
+      token,
+      user,
+      type: 'foget-password-token',
+      expiredAt: new Date(decodedToken.exp * 1000),
+    });
+
+    await this.revokedTokensService.saveRevokedToken(revokedToken);
     await this.usersService.saveUser(user);
     log(
       `user ${user.userName} with email ${user.email} is change it's password`,

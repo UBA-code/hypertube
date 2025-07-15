@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import RevokedToken from 'src/revoked-tokens/revoked-tokens.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User {
@@ -18,6 +19,8 @@ export class User {
   password: string;
   @Column()
   authType: 'local' | '42' | 'google' | 'github';
-  @Column({ nullable: true })
-  resetToken: string | null;
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+  @OneToMany(() => RevokedToken, (token) => token.user, { cascade: true })
+  revokedTokens: RevokedToken[];
 }

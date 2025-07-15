@@ -1,18 +1,24 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { Observable } from 'rxjs';
 import { IS_PUBLIC_KEY } from '../decorators/skip-auth.decorator';
+import { RevokedTokensService } from 'src/revoked-tokens/revoked-tokens.service';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class JwtGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
+  constructor(
+    private revokedTokenService: RevokedTokensService,
+    private reflector: Reflector,
+  ) {
     super();
   }
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -22,6 +28,25 @@ export class JwtGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    return super.canActivate(context);
+    const req = context.switchToHttp().getRequest();
+    const token = req.cookies['accessToken'];
+    const isRevoked = await this.revokedTokenService.findOne({
+      where: { token },
+    });
+
+    if (!token) {
+      throw new UnauthorizedException();
+    }
+
+    if (isRevoked) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    // Call super.canActivate and handle async result
+    const result = super.canActivate(context); // Assuming this guard extends a base class
+    if (result instanceof Observable) {
+      return result.toPromise(); // Convert Observable to Promise
+    }
+    return result; // Handles boolean or Promise<boolean>
   }
 }

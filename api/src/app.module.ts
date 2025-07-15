@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/users.entity';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import RevokedToken from './revoked-tokens/revoked-tokens.entity';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { join } from 'path';
       password: process.env.DB_PASSWORD,
       username: process.env.DB_USER,
       database: process.env.DB_NAME,
-      entities: [User],
+      entities: [User, RevokedToken],
       synchronize: true,
       logging: true,
       autoLoadEntities: true,

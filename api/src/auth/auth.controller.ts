@@ -3,9 +3,11 @@ import {
   Controller,
   Get,
   HttpCode,
+  NotFoundException,
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -33,9 +35,12 @@ import {
   ResetPasswordPayload,
 } from './dto/auth.dto';
 
+import { RevokedTokensService } from 'src/revoked-tokens/revoked-tokens.service';
+
 @Controller('auth')
 export class AuthController {
   constructor(
+    private revokedTokensService: RevokedTokensService,
     private authService: AuthService,
     private usersService: UsersService,
     private mailService: MailsService,
@@ -117,7 +122,7 @@ export class AuthController {
   }
 
   @SkipAuth()
-  @ApiOperation({ summary: 'reset password, send email with reset link' })
+  @ApiOperation({ summary: 'send email with reset link' })
   @ApiResponse({
     status: 200,
     description:
@@ -130,10 +135,19 @@ export class AuthController {
   }
 
   @SkipAuth()
+  @ApiOperation({ summary: 'change password if the token is valid' })
   @Post('reset-password')
   async resetPasswordWithToken(
     @Body(ValidationPipe) payload: ResetPasswordPayload,
   ) {
+    const isRevoked = await this.revokedTokensService.findOne({
+      where: { token: payload.token },
+    });
+
+    if (isRevoked) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
     return await this.authService.resetPassowrd(
       payload.token,
       payload.newPassword,
@@ -147,7 +161,12 @@ export class AuthController {
     description: 'Logout successful',
   })
   @HttpCode(200)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    await this.authService.logout(
+      req['user']['id'],
+      req.cookies['accessToken'],
+    );
+
     res.clearCookie('accessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

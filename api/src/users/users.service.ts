@@ -5,14 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './users.entity';
-import { Repository } from 'typeorm';
+import { FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { UserDto } from './dto/user.dto';
 import { UserPublicDataDto } from './dto/public-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { log } from 'node:console';
 
 @Injectable()
 export class UsersService {
@@ -75,8 +74,15 @@ export class UsersService {
     return user;
   }
 
-  async findOneBy(query: object): Promise<User> {
+  async findOneBy(query: FindOptionsWhere<User>): Promise<User> {
     const user = await this.usersRepository.findOneBy(query);
+
+    return user;
+  }
+
+  async findOne(query: FindOneOptions<User>): Promise<User> {
+    const user = await this.usersRepository.findOne(query);
+
     return user;
   }
 
@@ -123,7 +129,7 @@ export class UsersService {
   }
 
   async saveUser(user: User) {
-    await this.usersRepository.save(user);
+    return await this.usersRepository.save(user);
   }
 
   async updateAvatar(id: number, file: Express.Multer.File): Promise<string> {
