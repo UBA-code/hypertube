@@ -31,7 +31,7 @@ export class GithubStrategy extends PassportStrategy(Strategy) {
     user.email = profile.emails[0]?.value;
     user.firstName = userObj.name;
     user.lastName = '';
-    user.avatar = userObj.avatar_url;
+    user.profilePicture = userObj.avatar_url;
     user.authType = 'github';
     user.password = '-';
     user.userName = userObj.login;

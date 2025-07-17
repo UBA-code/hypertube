@@ -15,5 +15,5 @@ export class UpdateUserDto {
   @IsNotEmpty()
   @IsOptional()
   @ApiProperty()
-  avatar: string;
+  profilePicture: string;
 }

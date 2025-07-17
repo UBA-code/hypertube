@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './users.entity';
-import { FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
+import { FindOneOptions, FindOptionsWhere, Like, Repository } from 'typeorm';
 import { UserDto } from './dto/user.dto';
 import { UserPublicDataDto } from './dto/public-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -41,7 +41,7 @@ export class UsersService {
 
     const newUser = this.usersRepository.create(user);
 
-    if (file) newUser.avatar = file.filename;
+    if (file) newUser.profilePicture = file.filename;
     newUser.password = await this.hashPassword(user.password);
     newUser.authType = 'local';
     await this.usersRepository.save(newUser);
@@ -95,6 +95,12 @@ export class UsersService {
     return user;
   }
 
+  async findByUserNameHint(username: string): Promise<User[]> {
+    return await this.usersRepository.findBy({
+      userName: Like(`%${username}%`),
+    });
+  }
+
   async findOneOrCreateByUsername(userName: string, user: User): Promise<User> {
     const userFound = await this.usersRepository.findOneBy({ userName });
     if (userFound && userFound.authType === user.authType) {
@@ -124,7 +130,7 @@ export class UsersService {
     const newUser = await this.usersRepository.findOneBy({ id });
     if (!newUser) throw new NotFoundException();
     Object.assign(newUser, user);
-    if (file && file.buffer) newUser.avatar = file.filename;
+    if (file && file.buffer) newUser.profilePicture = file.filename;
     return await this.usersRepository.save(newUser);
   }
 
@@ -137,7 +143,7 @@ export class UsersService {
     if (!user) throw new NotFoundException(`User with id ${id} not found`);
 
     const avatarUrl = file.filename;
-    user.avatar = avatarUrl;
+    user.profilePicture = avatarUrl;
     await this.usersRepository.save(user);
     return 'Avatar updated successfully';
   }

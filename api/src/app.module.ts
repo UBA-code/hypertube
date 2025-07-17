@@ -7,7 +7,15 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/users.entity';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { MoviesModule } from './movies/movies.module';
 import RevokedToken from './revoked-tokens/revoked-tokens.entity';
+import Movie from './movies/entities/movie.entity';
+import Genre from './movies/entities/genre.entity';
+import Actor from './movies/entities/actor.entity';
+import Director from './movies/entities/director.entity';
+import Comment from './movies/entities/comment.entity';
+import Torrent from './movies/entities/torrent.entity';
+import Subtitle from './movies/entities/subtitles.entity';
 
 @Module({
   imports: [
@@ -18,7 +26,17 @@ import RevokedToken from './revoked-tokens/revoked-tokens.entity';
       password: process.env.DB_PASSWORD,
       username: process.env.DB_USER,
       database: process.env.DB_NAME,
-      entities: [User, RevokedToken],
+      entities: [
+        User,
+        RevokedToken,
+        Movie,
+        Genre,
+        Director,
+        Actor,
+        Comment,
+        Torrent,
+        Subtitle,
+      ],
       synchronize: true,
       logging: true,
       autoLoadEntities: true,
@@ -29,6 +47,7 @@ import RevokedToken from './revoked-tokens/revoked-tokens.entity';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
+    MoviesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

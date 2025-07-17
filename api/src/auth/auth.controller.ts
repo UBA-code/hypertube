@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   HttpCode,
-  NotFoundException,
   Post,
   Req,
   Res,
@@ -54,7 +53,7 @@ export class AuthController {
     description: 'Return created user',
     type: AuthResponse,
   })
-  @UseInterceptors(UploadInterceptor('avatar'))
+  @UseInterceptors(UploadInterceptor('profilePicture'))
   async createUser(
     @Res({ passthrough: true }) res: Response,
     @Body(ValidationPipe) user: UserDto,

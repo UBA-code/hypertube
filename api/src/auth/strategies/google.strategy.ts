@@ -28,7 +28,7 @@ export class GoogleAuthStrategy extends PassportStrategy(Strategy) {
     user.email = profile._json.email;
     user.firstName = profile._json.given_name;
     user.lastName = profile._json.family_name;
-    user.avatar = profile._json.picture;
+    user.profilePicture = profile._json.picture;
     user.authType = 'google';
     user.password = '-';
     user.userName = profile.displayName;

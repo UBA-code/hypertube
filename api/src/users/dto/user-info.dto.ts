@@ -15,7 +15,7 @@ export class userInfoDto {
   lastName: string;
 
   @ApiProperty()
-  avatar: string;
+  profilePicture: string;
 
   @ApiProperty()
   email: string;

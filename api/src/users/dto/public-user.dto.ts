@@ -15,8 +15,10 @@ export class UserPublicDataDto {
   lastName: string;
 
   @ApiProperty()
-  avatar: string;
+  profilePicture: string;
 
+  @Exclude()
+  authType: string;
   @Exclude()
   email: string;
   @Exclude()

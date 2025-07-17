@@ -30,7 +30,7 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy) {
     user.email = intraUser.email;
     user.firstName = intraUser.first_name;
     user.lastName = intraUser.last_name;
-    user.avatar = profile._json.image.versions.medium;
+    user.profilePicture = profile._json.image.versions.medium;
     user.authType = '42';
     user.password = '-';
     user.userName = intraUser.login;
