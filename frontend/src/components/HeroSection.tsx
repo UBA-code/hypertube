@@ -1,6 +1,7 @@
 import React from "react";
 import { FaPlay, FaHeart, FaArrowRight } from "react-icons/fa";
 import { MdDownload } from "react-icons/md";
+import SearchBar from "./SearchBar";
 
 const HeroSection: React.FC = () => {
   return (
@@ -18,6 +19,15 @@ const HeroSection: React.FC = () => {
           Watch your favorite movies in HD with no ads, no subscriptions, and no
           waiting.
         </p>
+
+        {/* Search Bar */}
+        <div className="mb-8">
+          <SearchBar
+            placeholder="Search for movies, TV shows..."
+            className="relative w-full max-w-lg"
+          />
+        </div>
+
         <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
           <button className="px-8 py-4 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg text-lg font-semibold hover:opacity-90 transition">
             Start Watching Free

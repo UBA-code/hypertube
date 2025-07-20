@@ -1,5 +1,6 @@
 import React from "react";
-import { FaSearch, FaPlay, FaBell, FaUserCircle } from "react-icons/fa";
+import { FaPlay, FaBell, FaUserCircle } from "react-icons/fa";
+import SearchBar from "./SearchBar";
 
 interface User {
   userName: string;
@@ -9,16 +10,12 @@ interface User {
 
 interface DashboardTopBarProps {
   currentUser: User | null;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
   isMenuOpen: boolean;
   setIsMenuOpen: (open: boolean) => void;
 }
 
 const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
   currentUser,
-  searchQuery,
-  setSearchQuery,
   isMenuOpen,
   setIsMenuOpen,
 }) => {
@@ -37,18 +34,7 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
         </h1>
       </div>
 
-      <div className="relative w-full max-w-md">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-          <FaSearch />
-        </div>
-        <input
-          type="text"
-          placeholder="Search movies..."
-          className="w-full pl-10 pr-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+      <SearchBar />
 
       <div className="hidden md:flex items-center space-x-4 ml-4">
         <button className="relative p-2 rounded-full hover:bg-gray-800">

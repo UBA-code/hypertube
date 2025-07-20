@@ -240,3 +240,31 @@ export const getCurrentUser = () => {
     }, 1000);
   });
 };
+
+// Search movies function - you can replace this with real API call
+export const searchMovies = async (query, page = 1) => {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/movies/search?query=${encodeURIComponent(
+        query
+      )}&page=${page}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Search error:", error);
+    throw error;
+  }
+};

@@ -11,6 +11,7 @@ export { default as LoginForm } from "./LoginForm";
 export { default as RegisterForm } from "./RegisterForm";
 export { default as SocialAuthButtons } from "./SocialAuthButtons";
 export { default as Notification } from "./Notification";
+export { default as SearchBar } from "./SearchBar";
 
 // Dashboard Components
 export { default as DashboardSidebar } from "./DashboardSidebar";

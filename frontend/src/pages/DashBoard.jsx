@@ -23,7 +23,6 @@ const Dashboard = () => {
   const [popularMovies, setPopularMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("popular");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -111,11 +110,6 @@ const Dashboard = () => {
     }
   };
 
-  // Filter movies based on search query
-  const filteredMovies = popularMovies.filter((movie) =>
-    movie.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   // Render loading skeleton
   if (loading) {
     return <DashboardLoadingSkeleton />;
@@ -134,8 +128,6 @@ const Dashboard = () => {
       <div className="flex-1 p-4 md:p-6 overflow-y-auto">
         <DashboardTopBar
           currentUser={currentUser}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
         />
@@ -155,7 +147,7 @@ const Dashboard = () => {
 
         <PopularMoviesSection
           activeTab={activeTab}
-          filteredMovies={filteredMovies}
+          filteredMovies={popularMovies}
         />
 
         <WatchedMoviesSection
