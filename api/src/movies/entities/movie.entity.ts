@@ -24,47 +24,54 @@ export default class Movie {
   title: string;
 
   @Column({ nullable: true })
-  year: string;
+  year: number;
 
   @Column({ nullable: true })
   imdbRating: number;
 
-  @ManyToMany(() => Genre, (genre) => genre.movies)
+  @Column()
+  imdbId: string;
+
+  @ManyToMany(() => Genre, (genre) => genre.movies, { cascade: ['insert'] })
   @JoinTable()
   genres: Genre[];
 
-  @Column()
+  @Column({ nullable: true })
   duration: number;
 
-  @Column()
+  @Column({ nullable: true })
   synopsis: string;
 
-  @Column()
+  @Column({ nullable: true })
   coverImage: string;
 
-  @ManyToOne(() => Director, (director) => director.movies)
+  @ManyToOne(() => Director, (director) => director.movies, {
+    cascade: ['insert'],
+  })
   director: Director;
 
-  @ManyToMany(() => Actor, (actor) => actor.movies)
+  @ManyToMany(() => Actor, (actor) => actor.movies, { cascade: ['insert'] })
   @JoinTable()
   actors: Actor[];
 
-  @OneToMany(() => Torrent, (torrent) => torrent.movie)
+  @OneToMany(() => Torrent, (torrent) => torrent.movie, { cascade: ['insert'] })
   torrents: Torrent[];
 
-  @OneToMany(() => Subtitle, (subtitle) => subtitle.movie)
+  @OneToMany(() => Subtitle, (subtitle) => subtitle.movie, {
+    cascade: ['insert'],
+  })
   subtitles: Subtitle[];
 
-  @OneToMany(() => Comment, (comment) => comment.movie)
+  @OneToMany(() => Comment, (comment) => comment.movie, { cascade: ['insert'] })
   comments: Comment[];
 
-  @Column()
+  @Column({ nullable: true })
   downloadStatus: 'not_started' | 'downloading' | 'completed';
 
-  @Column()
+  @Column({ nullable: true })
   streamUrl: string;
 
-  @Column()
+  @Column({ nullable: true })
   lastWatched: Date;
 
   @ManyToMany(() => User, (user) => user.watchedMovies)

@@ -16,6 +16,7 @@ import Director from './movies/entities/director.entity';
 import Comment from './movies/entities/comment.entity';
 import Torrent from './movies/entities/torrent.entity';
 import Subtitle from './movies/entities/subtitles.entity';
+import { RevokedTokensModule } from './revoked-tokens/revoked-tokens.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import Subtitle from './movies/entities/subtitles.entity';
       serveRoot: '/uploads',
     }),
     MoviesModule,
+    RevokedTokensModule,
   ],
   controllers: [AppController],
   providers: [AppService],
