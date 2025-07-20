@@ -3,6 +3,7 @@ import RevokedToken from 'src/revoked-tokens/revoked-tokens.entity';
 import {
   Column,
   Entity,
+  JoinTable,
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -37,7 +38,10 @@ export class User {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   lastActive: Date;
 
-  @ManyToMany(() => Movie, (movie) => movie.usersWatched)
+  @ManyToMany(() => Movie, (movie) => movie.usersWatched, {
+    cascade: ['insert'],
+  })
+  @JoinTable()
   watchedMovies: Movie[];
 
   @Column()
