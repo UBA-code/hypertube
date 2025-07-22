@@ -4,13 +4,13 @@ export default interface MoviesSearchResponse {
 }
 
 export interface SearchMovie {
-  id: number;
   imdb_id: string;
+  source: 'yts' | 'tmdb';
   title: string;
-  year: number;
+  year: string;
   imdbRating: number;
   genres: string[];
-  duration: number;
+  duration: string;
   coverImage: string;
   isWatched: boolean;
 }

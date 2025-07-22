@@ -12,6 +12,8 @@ import MoviesSearchResponse, {
   SearchMovie,
 } from './types/moviesSearchResponse';
 import Genre from './entities/genre.entity';
+import { TmdbSearchResponse } from './types/TmdbSearchResponse';
+import { tmdbGenres } from './constants/tmdbGenres';
 
 @Injectable()
 export class MoviesService {
@@ -57,14 +59,12 @@ export class MoviesService {
     await this.movieRepository.delete({ id });
   }
 
-  async search(
+  async getYtsSearchResult(
     userId: number,
     query: string,
     page: number,
-    limit: number,
     sort: 'title' | 'year' | 'rating' | 'seeds' | 'genre',
-    genre?: string,
-  ): Promise<MoviesSearchResponse> {
+  ) {
     const user = await this.usersService.findOne({
       where: { id: userId },
       relations: ['watchedMovies'],
@@ -77,7 +77,6 @@ export class MoviesService {
           {
             params: {
               query_term: query,
-              limit,
               page,
               sort_by: sort,
             },
@@ -85,16 +84,16 @@ export class MoviesService {
         )
       ).data;
 
-      let movies: SearchMovie[] = searchResult.data.movie_count
-        ? searchResult.data.movies.map((movie) => {
+      const movies: SearchMovie[] = searchResult.data.movie_count
+        ? searchResult.data.movies.map((movie): SearchMovie => {
             return {
-              id: movie.id,
+              source: 'yts',
               imdb_id: movie.imdb_code,
               title: movie.title,
-              year: movie.year,
+              year: movie.year.toString(),
               imdbRating: movie.rating,
               genres: movie.genres,
-              duration: movie.runtime,
+              duration: movie.runtime.toString(),
               coverImage: movie.medium_cover_image,
               isWatched: user.watchedMovies.some(
                 (watchedMovie) => watchedMovie.imdbId === movie.imdb_code,
@@ -102,10 +101,6 @@ export class MoviesService {
             };
           })
         : [];
-
-      if (sort === 'genre' && genre && genre.length) {
-        movies = movies.filter((mov) => mov.genres.includes(genre));
-      }
 
       return {
         movies,
@@ -118,6 +113,121 @@ export class MoviesService {
         totalResults: 0,
       };
     }
+  }
+
+  async getTmdbPopularSearchResult(
+    userId: number,
+    query: string = '',
+    page: number = 1,
+    year?: string,
+  ): Promise<MoviesSearchResponse> {
+    try {
+      const searchResult = (
+        await axios.get<TmdbSearchResponse>(
+          query && query.length > 0
+            ? `https://api.themoviedb.org/3/search/movie`
+            : `https://api.themoviedb.org/3/movie/popular`,
+          {
+            params: {
+              api_key: process.env.TMDB_API_KEY,
+              query,
+              page,
+              year,
+            },
+          },
+        )
+      ).data;
+
+      const user = await this.usersService.findOne({
+        where: { id: userId },
+        relations: ['watchedMovies'],
+      });
+
+      const movies = searchResult.results.map((movie): SearchMovie => {
+        return {
+          source: 'tmdb',
+          imdb_id: movie.id.toString(),
+          title: movie.title,
+          coverImage: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+          year: movie.release_date ? movie.release_date.split('-')[0] : '',
+          imdbRating: movie.vote_average,
+          genres: movie.genre_ids.map((id) => tmdbGenres[id] || 'Unknown'),
+          duration: '',
+          isWatched: user.watchedMovies.some(
+            (watchedMovie) => watchedMovie.imdbId === movie.id.toString(),
+          ),
+        };
+      });
+
+      return {
+        movies,
+        totalResults: searchResult.total_results,
+      };
+    } catch (error) {
+      console.error('Error fetching TMDB popular movies:', error);
+      return {
+        movies: [],
+        totalResults: 0,
+      };
+    }
+  }
+
+  async search(
+    userId: number,
+    query: string,
+    page: number,
+    sort: 'title' | 'year' | 'rating',
+    filterByYear?: string,
+    filterByGenre?: string,
+    filterByRating?: number,
+  ): Promise<MoviesSearchResponse> {
+    const ytsSearchResult = await this.getYtsSearchResult(
+      userId,
+      query,
+      page,
+      sort,
+    );
+    const tmdbSearchResult = await this.getTmdbPopularSearchResult(
+      userId,
+      query,
+      page,
+      filterByGenre,
+    );
+
+    const mergedMovies = ytsSearchResult.movies
+      .concat(
+        tmdbSearchResult.movies.filter((tmdbMovie) => {
+          return !ytsSearchResult.movies.some(
+            (ytsMovie) =>
+              ytsMovie.title === tmdbMovie.title &&
+              ytsMovie.year === tmdbMovie.year,
+          );
+        }),
+      )
+      .filter(
+        (movie) =>
+          movie.genres.some(
+            (g) =>
+              !filterByGenre || g.toLowerCase() === filterByGenre.toLowerCase(),
+          ) &&
+          (movie.year === filterByYear || !filterByYear) &&
+          (Math.floor(movie.imdbRating) === Math.floor(filterByRating) ||
+            !filterByRating),
+      ); // filter by genre and year and rating if provided
+
+    if (sort == 'title' || (query && query.length > 0)) {
+      mergedMovies.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sort == 'rating' || !query || query.length === 0) {
+      // popular movies should be sorted by rating
+      mergedMovies.sort((a, b) => b.imdbRating - a.imdbRating);
+    } else if (sort == 'year') {
+      mergedMovies.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+    }
+
+    return {
+      movies: mergedMovies, //# merge the two results, keeping only unique movies
+      totalResults: mergedMovies.length,
+    };
   }
 
   async markAsWatched(userId: number, imdbId: string) {
@@ -140,7 +250,6 @@ export class MoviesService {
           })
         ).data.data.movie;
         movie = new Movie();
-        console.log(`movie rated: ${searchedMovie.rating}`);
 
         movie.title = searchedMovie.title;
         movie.year = searchedMovie.year;
