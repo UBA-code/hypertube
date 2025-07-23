@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Movie from './entities/movie.entity';
 import { Like, Repository } from 'typeorm';
@@ -10,10 +10,12 @@ import {
 import axios from 'axios';
 import MoviesSearchResponse, {
   SearchMovie,
+  SearchMovieDetails,
 } from './types/moviesSearchResponse';
 import Genre from './entities/genre.entity';
-import { TmdbSearchResponse } from './types/TmdbSearchResponse';
 import { tmdbGenres } from './constants/tmdbGenres';
+import { TmdbSearchResponse } from './types/TmdbSearchResponse';
+import { TMDBMovieDetails } from './types/tmdbMovieDetails';
 
 @Injectable()
 export class MoviesService {
@@ -228,6 +230,142 @@ export class MoviesService {
       movies: mergedMovies, //# merge the two results, keeping only unique movies
       totalResults: mergedMovies.length,
     };
+  }
+
+  async getMovieDetails(
+    userId: number,
+    imdbId: string,
+  ): Promise<SearchMovieDetails> {
+    if (imdbId[0] === 't') {
+      try {
+        return await this.getYtsMovieDetails(userId, imdbId);
+      } catch {
+        throw new BadRequestException('Movie not found on YTS');
+      }
+    } else {
+      try {
+        return await this.getTmdbMovieDetails(userId, imdbId);
+      } catch {
+        throw new BadRequestException('Movie not found on TMDB');
+      }
+    }
+  }
+
+  async getTmdbMovieDetails(
+    userId: number,
+    imdbId: string,
+  ): Promise<SearchMovieDetails> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['watchedMovies'],
+    });
+    try {
+      const tmdbSearchResult = (
+        await axios.get<TMDBMovieDetails>(
+          `https://api.themoviedb.org/3/movie/${imdbId}`,
+          {
+            params: {
+              api_key: process.env.TMDB_API_KEY,
+              append_to_response: 'credits',
+            },
+          },
+        )
+      ).data;
+      return {
+        imdb_id: tmdbSearchResult.imdb_id,
+        title: tmdbSearchResult.title,
+        coverImage: `https://image.tmdb.org/t/p/w500${tmdbSearchResult.poster_path}`,
+        releaseDate: tmdbSearchResult.release_date,
+        genres: tmdbSearchResult.genres.map((g) => g.name),
+        summary: tmdbSearchResult.overview,
+        runtime: tmdbSearchResult.runtime.toString(),
+        rating: tmdbSearchResult.vote_average,
+        isWatched: user.watchedMovies.some(
+          (watchedMovie) => watchedMovie.imdbId === tmdbSearchResult.imdb_id,
+        ),
+        casts: tmdbSearchResult.credits.cast
+          .filter((cast) => cast.known_for_department === 'Acting')
+          .map((cast) => ({
+            name: cast.name,
+            profileImage: cast.profile_path
+              ? `https://image.tmdb.org/t/p/w500${cast.profile_path}`
+              : '',
+          })),
+        producers: tmdbSearchResult.credits.crew
+          .filter((crew) => crew.known_for_department === 'Production')
+          .map((crew) => ({
+            name: crew.name,
+            profileImage: crew.profile_path
+              ? `https://image.tmdb.org/t/p/w500${crew.profile_path}`
+              : '',
+          })),
+        directors: tmdbSearchResult.credits.crew
+          .filter((crew) => crew.known_for_department === 'Directing')
+          .map((crew) => ({
+            name: crew.name,
+            profileImage: crew.profile_path
+              ? `https://image.tmdb.org/t/p/w500${crew.profile_path}`
+              : '',
+          })),
+        writers: tmdbSearchResult.credits.crew
+          .filter((crew) => crew.known_for_department === 'Writing')
+          .map((crew) => ({
+            name: crew.name,
+            profileImage: crew.profile_path
+              ? `https://image.tmdb.org/t/p/w500${crew.profile_path}`
+              : '',
+          })),
+      };
+    } catch (error) {
+      console.error('Error fetching TMDB movie details:', error);
+      throw new Error('Movie not found on TMDB');
+    }
+  }
+
+  async getYtsMovieDetails(
+    userId: number,
+    imdbId: string,
+  ): Promise<SearchMovieDetails> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['watchedMovies'],
+    });
+    try {
+      const ytsSearchResult: YtsDetailedMovie = (
+        await axios.get('https://yts.mx/api/v2/movie_details.json', {
+          params: {
+            imdb_id: imdbId,
+            with_cast: true,
+          },
+        })
+      ).data.data.movie;
+      console.log('-'.repeat(50));
+      console.log(ytsSearchResult);
+
+      return {
+        imdb_id: ytsSearchResult.imdb_code,
+        title: ytsSearchResult.title,
+        coverImage: ytsSearchResult.medium_cover_image,
+        releaseDate: ytsSearchResult.year.toString(),
+        genres: ytsSearchResult.genres,
+        summary: ytsSearchResult.description_full,
+        runtime: ytsSearchResult.runtime.toString(),
+        rating: ytsSearchResult.rating,
+        isWatched: user.watchedMovies.some(
+          (watchedMovie) => watchedMovie.imdbId === ytsSearchResult.imdb_code,
+        ),
+        casts: ytsSearchResult.cast.map((cast) => ({
+          name: cast.name,
+          profileImage: cast.url_small_image || '',
+        })),
+        producers: [],
+        directors: [],
+        writers: [],
+      };
+    } catch (error) {
+      console.error('Error fetching YTS movie details:', error);
+      throw new Error('Movie not found on YTS');
+    }
   }
 
   async markAsWatched(userId: number, imdbId: string) {
