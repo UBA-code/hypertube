@@ -200,15 +200,16 @@ const SearchResults: React.FC = () => {
             setHasMore(newHasMore);
             return newMovies;
           });
+          // Don't update totalResults on pagination - keep the original count
         } else {
           setMovies(data.movies);
           // For initial search, assume there are more results if we got any movies
           // We'll only know for sure when we get an empty response on page 2+
           const initialHasMore = data.movies.length > 0;
           setHasMore(initialHasMore);
+          // Only update totalResults on initial search
+          setTotalResults(data.totalResults);
         }
-
-        setTotalResults(data.totalResults);
       } catch (err) {
         setError(
           err instanceof Error
