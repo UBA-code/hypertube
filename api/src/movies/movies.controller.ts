@@ -3,12 +3,13 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
   Req,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
-import { ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse from './types/moviesSearchResponse';
 import { Request } from 'express';
 
@@ -104,6 +105,11 @@ export class MoviesController {
     description: 'Filter by genre',
     type: String,
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of popular movies',
+    type: MoviesSearchResponse,
+  })
   async getPopularMovies(
     @Req() req: Request,
     @Query('page') page: number = 1,
@@ -115,6 +121,25 @@ export class MoviesController {
       sort = 'rating';
     }
     return await this.moviesService.search(user['id'], '', page, sort, genre);
+  }
+
+  @Get(':imdbId')
+  @ApiOperation({ summary: 'Get movie details by imdbId or tmdbId' })
+  @ApiParam({
+    name: 'imdbId or tmdbId',
+    required: true,
+    description: 'IMDB ID or TMDB ID of the movie',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns movie details',
+    type: MoviesSearchResponse,
+  })
+  async getMovieDetails(@Req() req: Request, @Param('imdbId') imdbId: string) {
+    if (!imdbId) {
+      throw new BadRequestException('Movie ID is required');
+    }
+    return await this.moviesService.getMovieDetails(req['user']['id'], imdbId);
   }
 
   @Post('watched')
