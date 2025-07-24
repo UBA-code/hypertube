@@ -1,4 +1,4 @@
-import { PrimaryGeneratedColumn, Column, OneToMany, Entity } from 'typeorm';
+import { PrimaryGeneratedColumn, Column, Entity, ManyToMany } from 'typeorm';
 import Movie from './movie.entity';
 
 @Entity()
@@ -9,6 +9,6 @@ export default class Director {
   @Column()
   name: string;
 
-  @OneToMany(() => Movie, (movie) => movie.director)
+  @ManyToMany(() => Movie, (movie) => movie.directors)
   movies: Movie[];
 }

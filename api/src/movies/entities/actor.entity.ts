@@ -9,6 +9,6 @@ export default class Actor {
   @Column()
   name: string;
 
-  @ManyToMany(() => Movie, (movie) => movie.director)
+  @ManyToMany(() => Movie, (movie) => movie.actors, { cascade: ['insert'] })
   movies: Movie[];
 }

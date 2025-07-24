@@ -13,10 +13,12 @@ import Movie from './movies/entities/movie.entity';
 import Genre from './movies/entities/genre.entity';
 import Actor from './movies/entities/actor.entity';
 import Director from './movies/entities/director.entity';
-import Comment from './movies/entities/comment.entity';
+import Comment from './comments/entities/comment.entity';
 import Torrent from './movies/entities/torrent.entity';
 import Subtitle from './movies/entities/subtitles.entity';
 import { RevokedTokensModule } from './revoked-tokens/revoked-tokens.module';
+import { CommentsModule } from './comments/comments.module';
+import Producer from './movies/entities/Producer.entity';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { RevokedTokensModule } from './revoked-tokens/revoked-tokens.module';
         Movie,
         Genre,
         Director,
+        Producer,
         Actor,
         Comment,
         Torrent,
@@ -50,6 +53,7 @@ import { RevokedTokensModule } from './revoked-tokens/revoked-tokens.module';
     }),
     MoviesModule,
     RevokedTokensModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

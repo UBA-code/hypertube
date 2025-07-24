@@ -4,7 +4,6 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -14,6 +13,7 @@ import Actor from './actor.entity';
 import Comment from '../../comments/entities/comment.entity';
 import Torrent from './torrent.entity';
 import Subtitle from './subtitles.entity';
+import Producer from './Producer.entity';
 
 @Entity()
 export default class Movie {
@@ -26,7 +26,7 @@ export default class Movie {
   @Column({ nullable: true })
   year: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'real' })
   imdbRating: number;
 
   @Column()
@@ -45,10 +45,17 @@ export default class Movie {
   @Column({ nullable: true })
   coverImage: string;
 
-  @ManyToOne(() => Director, (director) => director.movies, {
+  @ManyToMany(() => Director, (director) => director.movies, {
     cascade: ['insert'],
   })
-  director: Director;
+  @JoinTable()
+  directors: Director[];
+
+  @ManyToMany(() => Producer, (producer) => producer.movies, {
+    cascade: ['insert'],
+  })
+  @JoinTable()
+  producers: Producer[];
 
   @ManyToMany(() => Actor, (actor) => actor.movies, { cascade: ['insert'] })
   @JoinTable()
