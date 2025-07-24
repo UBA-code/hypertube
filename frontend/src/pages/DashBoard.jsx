@@ -47,8 +47,7 @@ const Dashboard = () => {
         // If successful, user is authenticated, get user data
         const userData = await response.json();
         setCurrentUser(userData);
-      } catch (error) {
-        console.log("Auth check failed:", error);
+      } catch {
         // If there's an error, assume user is not authenticated and redirect
         navigate("/login");
         return;
@@ -139,11 +138,6 @@ const Dashboard = () => {
         />
 
         <DashboardWelcomeMessage currentUser={currentUser} />
-
-        <ContinueWatchingSection
-          watchedMovies={watchedMovies}
-          activeTab={activeTab}
-        />
 
         <PopularMoviesSection
           activeTab={activeTab}

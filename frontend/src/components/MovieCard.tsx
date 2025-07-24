@@ -1,15 +1,43 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaPlay, FaHeart, FaRegHeart } from "react-icons/fa";
 import { MdDownload } from "react-icons/md";
 import { RiMovie2Line } from "react-icons/ri";
 
 interface Movie {
-  id: string;
+  imdbId: string;
   title: string;
   year: number;
   coverImage?: string;
   imdbRating?: number;
-  torrents?: Array<{ size: string }>;
+  genres: string[];
+  duration: number;
+  isWatched: boolean;
+  synopsis: string;
+  cast: {
+    actors: string[];
+    directors: string[];
+    producers: string[];
+  };
+  torrents: Array<{
+    quality?: string;
+    size?: string;
+    seeders?: number;
+    leechers?: number;
+  }>;
+  subtitles: Array<{
+    language: string;
+    url: string;
+  }>;
+  comments: Array<{
+    id: string;
+    content: string;
+    user: string;
+    timestamp: string;
+  }>;
+  downloadStatus: string;
+  streamUrl: string;
+  lastWatched: string | null;
 }
 
 interface MovieCardProps {
@@ -19,9 +47,35 @@ interface MovieCardProps {
 
 const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
   const [isFavorite, setIsFavorite] = useState(false);
+  const navigate = useNavigate();
+
+  // Function to get rating color based on IMDB score (0.0 = red, 10.0 = green)
+  const getRatingColor = (rating: number): string => {
+    // Normalize rating to 0-1 scale
+    const normalized = Math.max(0, Math.min(10, rating)) / 10;
+
+    // Interpolate between red (0) and green (1)
+    // Red: rgb(239, 68, 68) - Tailwind red-500
+    // Green: rgb(34, 197, 94) - Tailwind green-500
+    const red = Math.round(239 - (239 - 34) * normalized);
+    const green = Math.round(68 + (197 - 68) * normalized);
+    const blue = Math.round(68 + (94 - 68) * normalized);
+
+    return `rgb(${red}, ${green}, ${blue})`;
+  };
+
+  // Format rating to 1 decimal place
+  const formatRating = (rating: number): string => {
+    return rating.toFixed(1);
+  };
+
+  // Handle movie click to navigate to details page
+  const handleMovieClick = () => {
+    navigate(`/movie/${movie.imdbId}`);
+  };
 
   return (
-    <div className="group relative">
+    <div className="group relative cursor-pointer" onClick={handleMovieClick}>
       <div className="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden relative">
         {movie.coverImage ? (
           <img
@@ -66,8 +120,11 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
         )}
 
         {movie.imdbRating && (
-          <div className="absolute top-2 right-2 bg-yellow-600 text-xs font-bold px-2 py-1 rounded">
-            {movie.imdbRating}
+          <div
+            className="absolute top-2 right-2 text-xs font-bold px-2 py-1 rounded text-white"
+            style={{ backgroundColor: getRatingColor(movie.imdbRating) }}
+          >
+            {formatRating(movie.imdbRating)}
           </div>
         )}
       </div>

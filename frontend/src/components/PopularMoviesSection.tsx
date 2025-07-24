@@ -4,12 +4,39 @@ import { MdTrendingUp } from "react-icons/md";
 import MovieCard from "./MovieCard";
 
 interface Movie {
-  id: string;
+  imdbId: string;
   title: string;
   year: number;
   coverImage?: string;
   imdbRating?: number;
-  torrents?: Array<{ size: string }>;
+  genres: string[];
+  duration: number;
+  isWatched: boolean;
+  synopsis: string;
+  cast: {
+    actors: string[];
+    directors: string[];
+    producers: string[];
+  };
+  torrents: Array<{
+    quality?: string;
+    size?: string;
+    seeders?: number;
+    leechers?: number;
+  }>;
+  subtitles: Array<{
+    language: string;
+    url: string;
+  }>;
+  comments: Array<{
+    id: string;
+    content: string;
+    user: string;
+    timestamp: string;
+  }>;
+  downloadStatus: string;
+  streamUrl: string;
+  lastWatched: string | null;
 }
 
 interface PopularMoviesSectionProps {
@@ -51,7 +78,7 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {filteredMovies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} />
+            <MovieCard key={movie.imdbId} movie={movie} />
           ))}
         </div>
       )}

@@ -214,13 +214,27 @@ const mockMovies = [
 ];
 
 // API functions that return promises with mock data
-export const getPopularMovies = () => {
-  return new Promise((resolve) => {
-    // Simulate network delay
-    setTimeout(() => {
-      resolve([...mockMovies]);
-    }, 1500);
-  });
+export const getPopularMovies = async () => {
+  try {
+    const response = await fetch("http://localhost:3000/movies/popular", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // Include cookies for authentication
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch popular movies: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.movies; // Return just the movies array
+  } catch (error) {
+    console.error("Error fetching popular movies:", error);
+    // Return empty array on error to prevent crashes
+    return [];
+  }
 };
 
 export const getWatchedMovies = () => {

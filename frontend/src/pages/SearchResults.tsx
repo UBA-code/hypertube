@@ -41,9 +41,30 @@ interface SearchResponse {
 // Movie Card Component for Search Results
 const SearchMovieCard: React.FC<{ movie: Movie }> = ({ movie }) => {
   const [isFavorite, setIsFavorite] = useState(false);
+  const navigate = useNavigate();
+
+  // Function to get rating color based on IMDB score (0.0 = red, 10.0 = green)
+  const getRatingColor = (rating: number): string => {
+    // Normalize rating to 0-1 scale
+    const normalized = Math.max(0, Math.min(10, rating)) / 10;
+
+    // Interpolate between red (0) and green (1)
+    // Red: rgb(239, 68, 68) - Tailwind red-500
+    // Green: rgb(34, 197, 94) - Tailwind green-500
+    const red = Math.round(239 - (239 - 34) * normalized);
+    const green = Math.round(68 + (197 - 68) * normalized);
+    const blue = Math.round(68 + (94 - 68) * normalized);
+
+    return `rgb(${red}, ${green}, ${blue})`;
+  };
+
+  // Handle movie click to navigate to details page
+  const handleMovieClick = () => {
+    navigate(`/movie/${movie.imdbId}`);
+  };
 
   return (
-    <div className="group relative">
+    <div className="group relative cursor-pointer" onClick={handleMovieClick}>
       <div className="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden relative">
         {movie.coverImage ? (
           <img
@@ -79,7 +100,10 @@ const SearchMovieCard: React.FC<{ movie: Movie }> = ({ movie }) => {
         </div>
 
         {movie.imdbRating && (
-          <div className="absolute top-2 right-2 bg-yellow-600 text-xs font-bold px-2 py-1 rounded">
+          <div
+            className="absolute top-2 right-2 text-xs font-bold px-2 py-1 rounded text-white"
+            style={{ backgroundColor: getRatingColor(movie.imdbRating) }}
+          >
             {movie.imdbRating.toFixed(1)}
           </div>
         )}
@@ -253,9 +277,10 @@ const SearchResults: React.FC = () => {
         const documentHeight = document.documentElement.scrollHeight;
         const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
 
-        // Only trigger if we're near the bottom (within 500px), not loading, and have more results
+        // Load more results when user is still 1500px from bottom (about 3-4 screen heights)
+        // This ensures results are ready before user reaches the end
         if (
-          distanceFromBottom <= 500 &&
+          distanceFromBottom <= 1500 &&
           !loading &&
           !loadingMore &&
           hasMore &&
