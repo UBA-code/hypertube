@@ -9,8 +9,8 @@ import {
 } from './types/ytsResponseInterfaces';
 import axios from 'axios';
 import MoviesSearchResponse, {
-  SearchMovie,
-  SearchMovieDetails,
+  MovieDto,
+  TorrentDto,
 } from './types/moviesSearchResponse';
 import Genre from './entities/genre.entity';
 import { tmdbGenres } from './constants/tmdbGenres';
@@ -66,7 +66,7 @@ export class MoviesService {
     query: string,
     page: number,
     sort: 'title' | 'year' | 'rating' | 'seeds' | 'genre',
-  ) {
+  ): Promise<MoviesSearchResponse> {
     const user = await this.usersService.findOne({
       where: { id: userId },
       relations: ['watchedMovies'],
@@ -86,20 +86,31 @@ export class MoviesService {
         )
       ).data;
 
-      const movies: SearchMovie[] = searchResult.data.movie_count
-        ? searchResult.data.movies.map((movie): SearchMovie => {
+      const movies = searchResult.data.movie_count
+        ? searchResult.data.movies.map((movie): MovieDto => {
             return {
-              source: 'yts',
               imdb_id: movie.imdb_code,
               title: movie.title,
-              year: movie.year.toString(),
+              year: movie.year,
               imdbRating: movie.rating,
               genres: movie.genres,
-              duration: movie.runtime.toString(),
+              duration: movie.runtime,
               coverImage: movie.medium_cover_image,
               isWatched: user.watchedMovies.some(
                 (watchedMovie) => watchedMovie.imdbId === movie.imdb_code,
               ),
+              synopsis: movie.synopsis,
+              cast: {
+                actors: [],
+                directors: [],
+                producers: [],
+              },
+              torrents: [],
+              subtitles: [],
+              comments: [],
+              downloadStatus: 'not_started',
+              streamUrl: '',
+              lastWatched: null,
             };
           })
         : [];
@@ -145,19 +156,32 @@ export class MoviesService {
         relations: ['watchedMovies'],
       });
 
-      const movies = searchResult.results.map((movie): SearchMovie => {
+      const movies = searchResult.results.map((movie): MovieDto => {
         return {
-          source: 'tmdb',
           imdb_id: movie.id.toString(),
           title: movie.title,
           coverImage: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
-          year: movie.release_date ? movie.release_date.split('-')[0] : '',
+          year: movie.release_date
+            ? parseInt(movie.release_date.split('-')[0])
+            : 0,
           imdbRating: movie.vote_average,
           genres: movie.genre_ids.map((id) => tmdbGenres[id] || 'Unknown'),
-          duration: '',
+          duration: 0,
+          synopsis: movie.overview,
           isWatched: user.watchedMovies.some(
             (watchedMovie) => watchedMovie.imdbId === movie.id.toString(),
           ),
+          cast: {
+            actors: [],
+            directors: [],
+            producers: [],
+          },
+          torrents: [],
+          subtitles: [],
+          comments: [],
+          downloadStatus: 'not_started',
+          streamUrl: '',
+          lastWatched: null,
         };
       });
 
@@ -212,7 +236,7 @@ export class MoviesService {
             (g) =>
               !filterByGenre || g.toLowerCase() === filterByGenre.toLowerCase(),
           ) &&
-          (movie.year === filterByYear || !filterByYear) &&
+          (movie.year === parseInt(filterByYear) || !filterByYear) &&
           (Math.floor(movie.imdbRating) === Math.floor(filterByRating) ||
             !filterByRating),
       ); // filter by genre and year and rating if provided
@@ -223,7 +247,7 @@ export class MoviesService {
       // popular movies should be sorted by rating
       mergedMovies.sort((a, b) => b.imdbRating - a.imdbRating);
     } else if (sort == 'year') {
-      mergedMovies.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+      mergedMovies.sort((a, b) => b.year - a.year);
     }
 
     return {
@@ -232,15 +256,16 @@ export class MoviesService {
     };
   }
 
-  async getMovieDetails(
-    userId: number,
-    imdbId: string,
-  ): Promise<SearchMovieDetails> {
+  async getMovieDetails(userId: number, imdbId: string): Promise<MovieDto> {
     if (imdbId[0] === 't') {
       try {
         return await this.getYtsMovieDetails(userId, imdbId);
       } catch {
-        throw new BadRequestException('Movie not found on YTS');
+        try {
+          return await this.getTmdbMovieDetails(userId, imdbId); //! try TMDB if YTS fails
+        } catch {
+          throw new BadRequestException('Movie not found on YTS');
+        }
       }
     } else {
       try {
@@ -254,7 +279,8 @@ export class MoviesService {
   async getTmdbMovieDetails(
     userId: number,
     imdbId: string,
-  ): Promise<SearchMovieDetails> {
+    withTorrents: boolean = false,
+  ): Promise<MovieDto> {
     const user = await this.usersService.findOne({
       where: { id: userId },
       relations: ['watchedMovies'],
@@ -275,46 +301,31 @@ export class MoviesService {
         imdb_id: tmdbSearchResult.imdb_id,
         title: tmdbSearchResult.title,
         coverImage: `https://image.tmdb.org/t/p/w500${tmdbSearchResult.poster_path}`,
-        releaseDate: tmdbSearchResult.release_date,
+        year: parseInt(tmdbSearchResult.release_date.split('-')[0]),
         genres: tmdbSearchResult.genres.map((g) => g.name),
-        summary: tmdbSearchResult.overview,
-        runtime: tmdbSearchResult.runtime.toString(),
-        rating: tmdbSearchResult.vote_average,
+        synopsis: tmdbSearchResult.overview,
+        duration: tmdbSearchResult.runtime,
+        imdbRating: tmdbSearchResult.vote_average,
         isWatched: user.watchedMovies.some(
           (watchedMovie) => watchedMovie.imdbId === tmdbSearchResult.imdb_id,
         ),
-        casts: tmdbSearchResult.credits.cast
-          .filter((cast) => cast.known_for_department === 'Acting')
-          .map((cast) => ({
-            name: cast.name,
-            profileImage: cast.profile_path
-              ? `https://image.tmdb.org/t/p/w500${cast.profile_path}`
-              : '',
-          })),
-        producers: tmdbSearchResult.credits.crew
-          .filter((crew) => crew.known_for_department === 'Production')
-          .map((crew) => ({
-            name: crew.name,
-            profileImage: crew.profile_path
-              ? `https://image.tmdb.org/t/p/w500${crew.profile_path}`
-              : '',
-          })),
-        directors: tmdbSearchResult.credits.crew
-          .filter((crew) => crew.known_for_department === 'Directing')
-          .map((crew) => ({
-            name: crew.name,
-            profileImage: crew.profile_path
-              ? `https://image.tmdb.org/t/p/w500${crew.profile_path}`
-              : '',
-          })),
-        writers: tmdbSearchResult.credits.crew
-          .filter((crew) => crew.known_for_department === 'Writing')
-          .map((crew) => ({
-            name: crew.name,
-            profileImage: crew.profile_path
-              ? `https://image.tmdb.org/t/p/w500${crew.profile_path}`
-              : '',
-          })),
+        cast: {
+          actors: tmdbSearchResult.credits.cast
+            .filter((cast) => cast.known_for_department === 'Acting')
+            .map((cast) => cast.name),
+          producers: tmdbSearchResult.credits.crew
+            .filter((crew) => crew.known_for_department === 'Production')
+            .map((crew) => crew.name),
+          directors: tmdbSearchResult.credits.crew
+            .filter((crew) => crew.known_for_department === 'Directing')
+            .map((crew) => crew.name),
+        },
+        torrents: withTorrents ? [] : [], // TMDB does not provide torrent info
+        subtitles: [],
+        comments: [],
+        downloadStatus: 'not_started',
+        streamUrl: '',
+        lastWatched: null,
       };
     } catch (error) {
       console.error('Error fetching TMDB movie details:', error);
@@ -325,7 +336,8 @@ export class MoviesService {
   async getYtsMovieDetails(
     userId: number,
     imdbId: string,
-  ): Promise<SearchMovieDetails> {
+    withTorrents: boolean = false,
+  ): Promise<MovieDto> {
     const user = await this.usersService.findOne({
       where: { id: userId },
       relations: ['watchedMovies'],
@@ -339,28 +351,40 @@ export class MoviesService {
           },
         })
       ).data.data.movie;
-      console.log('-'.repeat(50));
-      console.log(ytsSearchResult);
 
       return {
         imdb_id: ytsSearchResult.imdb_code,
         title: ytsSearchResult.title,
         coverImage: ytsSearchResult.medium_cover_image,
-        releaseDate: ytsSearchResult.year.toString(),
         genres: ytsSearchResult.genres,
-        summary: ytsSearchResult.description_full,
-        runtime: ytsSearchResult.runtime.toString(),
-        rating: ytsSearchResult.rating,
         isWatched: user.watchedMovies.some(
           (watchedMovie) => watchedMovie.imdbId === ytsSearchResult.imdb_code,
         ),
-        casts: ytsSearchResult.cast.map((cast) => ({
-          name: cast.name,
-          profileImage: cast.url_small_image || '',
-        })),
-        producers: [],
-        directors: [],
-        writers: [],
+        synopsis: ytsSearchResult.description_full,
+        imdbRating: ytsSearchResult.rating,
+        year: ytsSearchResult.year,
+        duration: ytsSearchResult.runtime,
+        streamUrl: '',
+        cast: {
+          actors: ytsSearchResult.cast.map((actor) => actor.name),
+          directors: [],
+          producers: [],
+        },
+        torrents: withTorrents
+          ? ytsSearchResult.torrents.map(
+              (torrent): TorrentDto => ({
+                magnetLink: torrent.url,
+                quality: torrent.quality,
+                size: torrent.size,
+                seeders: torrent.seeds,
+                leechers: torrent.peers,
+              }),
+            )
+          : [],
+        downloadStatus: 'not_started',
+        lastWatched: null,
+        subtitles: [],
+        comments: [],
       };
     } catch (error) {
       console.error('Error fetching YTS movie details:', error);
