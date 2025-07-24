@@ -10,13 +10,13 @@ export default class Torrent {
   magnetLink: string;
 
   @Column()
-  seed: number;
+  seeders: number;
 
   @Column()
-  leech: number;
+  leechers: number;
 
   @Column()
-  size: number;
+  size: string;
 
   @Column()
   quality: string;

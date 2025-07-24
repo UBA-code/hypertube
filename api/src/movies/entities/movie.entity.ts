@@ -11,7 +11,7 @@ import {
 import Genre from './genre.entity';
 import Director from './director.entity';
 import Actor from './actor.entity';
-import Comment from './comment.entity';
+import Comment from '../../comments/entities/comment.entity';
 import Torrent from './torrent.entity';
 import Subtitle from './subtitles.entity';
 
