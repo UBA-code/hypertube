@@ -90,7 +90,7 @@ export class TorrentDto {
 
 export class MovieDto {
   @ApiProperty()
-  imdb_id: string;
+  imdbId: string;
   @ApiProperty()
   title: string;
   @ApiProperty()

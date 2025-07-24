@@ -40,6 +40,10 @@ export class MoviesService {
     return await this.movieRepository.findOneBy({ id });
   }
 
+  async findMovieByImdbId(imdbId: string): Promise<Movie> {
+    return await this.movieRepository.findOneBy({ imdbId });
+  }
+
   async findMoviesByTitle(title: string): Promise<Movie[]> {
     return await this.movieRepository.find({
       where: { title },
@@ -89,7 +93,7 @@ export class MoviesService {
       const movies = searchResult.data.movie_count
         ? searchResult.data.movies.map((movie): MovieDto => {
             return {
-              imdb_id: movie.imdb_code,
+              imdbId: movie.imdb_code,
               title: movie.title,
               year: movie.year,
               imdbRating: movie.rating,
@@ -158,7 +162,7 @@ export class MoviesService {
 
       const movies = searchResult.results.map((movie): MovieDto => {
         return {
-          imdb_id: movie.id.toString(),
+          imdbId: movie.id.toString(),
           title: movie.title,
           coverImage: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
           year: movie.release_date
@@ -257,23 +261,56 @@ export class MoviesService {
   }
 
   async getMovieDetails(userId: number, imdbId: string): Promise<MovieDto> {
+    let searchResult: MovieDto;
     if (imdbId[0] === 't') {
       try {
-        return await this.getYtsMovieDetails(userId, imdbId);
+        searchResult = await this.getYtsMovieDetails(userId, imdbId);
       } catch {
         try {
-          return await this.getTmdbMovieDetails(userId, imdbId); //! try TMDB if YTS fails
+          searchResult = await this.getTmdbMovieDetails(userId, imdbId); //! try TMDB if YTS fails
         } catch {
-          throw new BadRequestException('Movie not found on YTS');
+          throw new BadRequestException(
+            'Movie not found on either YTS or TMDB',
+          );
         }
       }
     } else {
       try {
-        return await this.getTmdbMovieDetails(userId, imdbId);
+        searchResult = await this.getTmdbMovieDetails(userId, imdbId);
       } catch {
         throw new BadRequestException('Movie not found on TMDB');
       }
     }
+    if (!(await this.movieRepository.findOneBy({ imdbId }))) {
+      const movie = this.movieRepository.create({
+        title: searchResult.title,
+        year: searchResult.year,
+        imdbRating: searchResult.imdbRating,
+        imdbId: searchResult.imdbId,
+        genres: searchResult.genres.map((name) => ({ name })),
+        duration: searchResult.duration,
+        synopsis: searchResult.synopsis,
+        coverImage: searchResult.coverImage,
+        directors: searchResult.cast.directors.map((name) => ({ name })),
+        producers: searchResult.cast.producers.map((name) => ({ name })),
+        actors: searchResult.cast.actors.map((name) => ({ name })),
+        torrents: searchResult.torrents.map((torrent) => ({
+          magnetLink: torrent.magnetLink,
+          quality: torrent.quality,
+          size: torrent.size,
+          seeders: torrent.seeders,
+          leechers: torrent.leechers,
+        })),
+        subtitles: [],
+        comments: [],
+        downloadStatus: 'not_started',
+        streamUrl: '',
+        lastWatched: null,
+        usersWatched: [],
+      });
+      await this.movieRepository.save(movie);
+    }
+    return searchResult;
   }
 
   async getTmdbMovieDetails(
@@ -298,7 +335,7 @@ export class MoviesService {
         )
       ).data;
       return {
-        imdb_id: tmdbSearchResult.imdb_id,
+        imdbId: tmdbSearchResult.imdb_id,
         title: tmdbSearchResult.title,
         coverImage: `https://image.tmdb.org/t/p/w500${tmdbSearchResult.poster_path}`,
         year: parseInt(tmdbSearchResult.release_date.split('-')[0]),
@@ -333,11 +370,7 @@ export class MoviesService {
     }
   }
 
-  async getYtsMovieDetails(
-    userId: number,
-    imdbId: string,
-    withTorrents: boolean = false,
-  ): Promise<MovieDto> {
+  async getYtsMovieDetails(userId: number, imdbId: string): Promise<MovieDto> {
     const user = await this.usersService.findOne({
       where: { id: userId },
       relations: ['watchedMovies'],
@@ -353,7 +386,7 @@ export class MoviesService {
       ).data.data.movie;
 
       return {
-        imdb_id: ytsSearchResult.imdb_code,
+        imdbId: ytsSearchResult.imdb_code,
         title: ytsSearchResult.title,
         coverImage: ytsSearchResult.medium_cover_image,
         genres: ytsSearchResult.genres,
@@ -370,17 +403,15 @@ export class MoviesService {
           directors: [],
           producers: [],
         },
-        torrents: withTorrents
-          ? ytsSearchResult.torrents.map(
-              (torrent): TorrentDto => ({
-                magnetLink: torrent.url,
-                quality: torrent.quality,
-                size: torrent.size,
-                seeders: torrent.seeds,
-                leechers: torrent.peers,
-              }),
-            )
-          : [],
+        torrents: ytsSearchResult.torrents.map(
+          (torrent): TorrentDto => ({
+            magnetLink: torrent.url,
+            quality: torrent.quality,
+            size: torrent.size,
+            seeders: torrent.seeds,
+            leechers: torrent.peers,
+          }),
+        ),
         downloadStatus: 'not_started',
         lastWatched: null,
         subtitles: [],
