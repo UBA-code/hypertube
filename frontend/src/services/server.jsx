@@ -214,9 +214,9 @@ const mockMovies = [
 ];
 
 // API functions that return promises with mock data
-export const getPopularMovies = async () => {
+export const getPopularMovies = async (page = 1) => {
   try {
-    const response = await fetch("http://localhost:3000/movies/popular", {
+    const response = await fetch(`http://localhost:3000/movies/popular?page=${page}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -229,11 +229,11 @@ export const getPopularMovies = async () => {
     }
 
     const data = await response.json();
-    return data.movies; // Return just the movies array
+    return data; // Return the full response with movies and totalResults
   } catch (error) {
     console.error("Error fetching popular movies:", error);
-    // Return empty array on error to prevent crashes
-    return [];
+    // Return empty response on error to prevent crashes
+    return { movies: [], totalResults: 0 };
   }
 };
 

@@ -15,12 +15,11 @@ import {
 } from "../components";
 
 // Mock API service that returns promises with data matching your plan structure
-import { getPopularMovies, getWatchedMovies } from "../services/server";
+import { getWatchedMovies } from "../services/server";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [popularMovies, setPopularMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("popular");
@@ -62,13 +61,9 @@ const Dashboard = () => {
       try {
         setLoading(true);
 
-        // Fetch movie data (user data is already fetched from auth check)
-        const [popular, watched] = await Promise.all([
-          getPopularMovies(),
-          getWatchedMovies(),
-        ]);
+        // Only fetch watched movies now - PopularMoviesSection handles its own data
+        const watched = await getWatchedMovies();
 
-        setPopularMovies(popular);
         setWatchedMovies(watched);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -141,7 +136,6 @@ const Dashboard = () => {
 
         <PopularMoviesSection
           activeTab={activeTab}
-          filteredMovies={popularMovies}
         />
 
         <WatchedMoviesSection

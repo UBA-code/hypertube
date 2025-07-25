@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { FaSearch } from "react-icons/fa";
 import { MdTrendingUp } from "react-icons/md";
 import MovieCard from "./MovieCard";
@@ -39,15 +39,158 @@ interface Movie {
   lastWatched: string | null;
 }
 
+interface PopularResponse {
+  movies: Movie[];
+  totalResults: number;
+}
+
 interface PopularMoviesSectionProps {
   activeTab: string;
-  filteredMovies: Movie[];
 }
+
+// Loading Skeleton Component
+const PopularLoadingSkeleton: React.FC = () => (
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+    {[...Array(10)].map((_, i) => (
+      <div key={i} className="animate-pulse">
+        <div className="aspect-[2/3] bg-gray-800 rounded-lg mb-2"></div>
+        <div className="h-4 bg-gray-800 rounded w-3/4 mb-1"></div>
+        <div className="h-3 bg-gray-800 rounded w-1/2"></div>
+      </div>
+    ))}
+  </div>
+);
 
 const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
   activeTab,
-  filteredMovies,
 }) => {
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  // Function to fetch popular movies
+  const fetchPopularMovies = useCallback(
+    async (page: number, append: boolean = false) => {
+      try {
+        if (page === 1 && !append) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
+        setError(null);
+
+        const response = await fetch(
+          `http://localhost:3000/movies/popular?page=${page}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch popular movies: ${response.statusText}`);
+        }
+
+        const data: PopularResponse = await response.json();
+
+        if (append) {
+          setMovies((prev) => {
+            const newMovies = [...prev, ...data.movies];
+            // Set hasMore based on whether we received any movies
+            const newHasMore = data.movies.length > 0;
+            setHasMore(newHasMore);
+            return newMovies;
+          });
+          // Don't update totalResults on pagination - keep the original count
+        } else {
+          setMovies(data.movies);
+          // For initial load, assume there are more results if we got any movies
+          const initialHasMore = data.movies.length > 0;
+          setHasMore(initialHasMore);
+          // Only update totalResults on initial load
+          setTotalResults(data.totalResults);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An error occurred while fetching popular movies"
+        );
+        console.error("Popular movies fetch error:", err);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    []
+  );
+
+  // Initial load when component mounts and tab is active
+  useEffect(() => {
+    if (activeTab === "popular" && !initialized) {
+      setMovies([]);
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchPopularMovies(1, false);
+      setInitialized(true);
+    }
+  }, [activeTab, initialized, fetchPopularMovies]);
+
+  // Infinite scroll handler with throttling
+  useEffect(() => {
+    if (activeTab !== "popular") return;
+
+    let scrollTimeout: number;
+
+    const handleScroll = () => {
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+
+      // Throttle scroll events to prevent excessive calls
+      scrollTimeout = setTimeout(() => {
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
+
+        // Load more results when user is still 1500px from bottom (about 3-4 screen heights)
+        // This ensures results are ready before user reaches the end
+        if (
+          distanceFromBottom <= 1500 &&
+          !loading &&
+          !loadingMore &&
+          hasMore
+        ) {
+          const nextPage = currentPage + 1;
+          setCurrentPage(nextPage);
+          fetchPopularMovies(nextPage, true);
+        }
+      }, 200); // 200ms throttle
+    };
+
+    // Add scroll listener
+    window.addEventListener("scroll", handleScroll);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, [activeTab, currentPage, hasMore, loading, loadingMore, fetchPopularMovies]);
+
   if (activeTab !== "popular") {
     return null;
   }
@@ -69,18 +212,55 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         </div>
       </div>
 
-      {filteredMovies.length === 0 ? (
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-900 border border-red-700 rounded-lg p-4 mb-6">
+          <p className="text-red-300">{error}</p>
+          <button
+            onClick={() => fetchPopularMovies(1, false)}
+            className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded transition"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Results */}
+      {loading ? (
+        <PopularLoadingSkeleton />
+      ) : movies.length === 0 && !loading ? (
         <div className="text-center py-12">
           <FaSearch className="mx-auto text-4xl text-gray-600 mb-4" />
-          <h3 className="text-xl font-bold">No movies found</h3>
-          <p className="text-gray-500">Try adjusting your search query</p>
+          <h3 className="text-xl font-bold">No popular movies found</h3>
+          <p className="text-gray-500">Unable to load popular movies at this time</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {filteredMovies.map((movie) => (
-            <MovieCard key={movie.imdbId} movie={movie} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {movies.map((movie) => (
+              <MovieCard key={movie.imdbId} movie={movie} />
+            ))}
+          </div>
+
+          {/* Load More Indicator */}
+          {loadingMore && (
+            <div className="mt-8">
+              <PopularLoadingSkeleton />
+              <div className="text-center mt-4">
+                <p className="text-gray-400">Loading page {currentPage}...</p>
+              </div>
+            </div>
+          )}
+
+          {/* End of Results */}
+          {!hasMore && movies.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                You've reached the end of popular movies ({totalResults} total)
+              </p>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
