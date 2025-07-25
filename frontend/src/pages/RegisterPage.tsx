@@ -3,11 +3,17 @@ import { FaPlay, FaArrowLeft } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
 import SocialAuthButtons from "../components/SocialAuthButtons";
+import Notification from "../components/Notification";
 
 const RegisterPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const handleEmailRegister = async (userData: {
+    username: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -18,31 +24,55 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement email registration logic
       const x = {
-        userName: `${userData.firstName}${userData.lastName}`,
+        userName: userData.username,
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email,
         password: userData.password,
       };
       console.log("Email registration:", x);
-      fetch("http://localhost:3000/auth/register", {
+
+      const response = await fetch("http://localhost:3000/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(x),
-      }).then((res) => {
-        if (!res.ok) {
-          throw new Error("Registration failed");
-        }
       });
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
-      alert(
-        "Registration successful! Please check your email to verify your account."
-      );
+
+      const responseData = await response.json();
+
+      if (response.status === 201 && responseData.success) {
+        // Success case
+        setNotification({
+          message:
+            responseData.message ||
+            "Registration successful! Please check your email to verify your account.",
+          type: "success",
+        });
+      } else {
+        // Error case
+        let errorMessage = "Registration failed. Please try again.";
+
+        if (responseData.message) {
+          if (Array.isArray(responseData.message)) {
+            errorMessage = responseData.message.join(", ");
+          } else {
+            errorMessage = responseData.message;
+          }
+        }
+
+        setNotification({
+          message: errorMessage,
+          type: "error",
+        });
+      }
     } catch (error) {
       console.error("Registration failed:", error);
-      alert("Registration failed. Please try again.");
+      setNotification({
+        message: "Network error. Please check your connection and try again.",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -160,6 +190,15 @@ const RegisterPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };

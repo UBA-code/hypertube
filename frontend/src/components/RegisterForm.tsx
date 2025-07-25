@@ -3,6 +3,7 @@ import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from "react-icons/fa";
 
 interface RegisterFormProps {
   onSubmit: (userData: {
+    username: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -17,6 +18,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState({
+    username: "",
     firstName: "",
     lastName: "",
     email: "",
@@ -29,6 +31,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.username.trim()) {
+      newErrors.username = "Username is required";
+    } else if (formData.username.length < 3) {
+      newErrors.username = "Username must be at least 3 characters";
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      newErrors.username =
+        "Username can only contain letters, numbers, and underscores";
+    }
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required";
@@ -125,6 +136,30 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
           )}
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="username" className="block text-sm font-medium mb-2">
+          Username
+        </label>
+        <div className="relative">
+          <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <input
+            id="username"
+            name="username"
+            type="text"
+            value={formData.username}
+            onChange={handleInputChange}
+            className={`w-full pl-10 pr-4 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+              errors.username ? "border-red-500" : "border-gray-700"
+            }`}
+            placeholder="Choose a username"
+            disabled={isLoading}
+          />
+        </div>
+        {errors.username && (
+          <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+        )}
       </div>
 
       <div>
