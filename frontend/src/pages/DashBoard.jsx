@@ -1,5 +1,6 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaSearch,
   FaPlay,
@@ -22,6 +23,7 @@ import {
 } from "../services/server";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [popularMovies, setPopularMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
@@ -29,6 +31,36 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("popular");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for authentication
+        });
+
+        // If the response is not successful (401 or other error), user is not authenticated
+        if (!response.ok) {
+          navigate("/login");
+          return;
+        }
+
+        // If successful, user is authenticated, continue with dashboard
+      } catch (error) {
+        console.log("Auth check failed:", error);
+        // If there's an error, assume user is not authenticated and redirect
+        navigate("/login");
+        return;
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,6 +86,32 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+      });
+
+      if (response.ok) {
+        // Logout successful, redirect to login page
+        navigate("/login");
+      } else {
+        console.error("Logout failed:", response.statusText);
+        // Even if logout fails on server, clear local state and redirect
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if there's a network error, redirect to login
+      navigate("/login");
+    }
+  };
 
   // Filter movies based on search query
   const filteredMovies = popularMovies.filter((movie) =>
@@ -186,7 +244,10 @@ const Dashboard = () => {
             <FaCog className="text-xl" />
             <span>Settings</span>
           </button>
-          <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition"
+          >
             <FaSignOutAlt className="text-xl" />
             <span>Sign Out</span>
           </button>
