@@ -64,6 +64,7 @@ const RegisterPage: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify(x),
       });
 
@@ -115,7 +116,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement GitHub OAuth
       console.log("GitHub OAuth initiated");
-      window.location.href = "/auth/github";
+      window.location.href = "http://localhost:3000/auth/github";
     } catch (error) {
       console.error("GitHub auth failed:", error);
       setIsLoading(false);
@@ -127,7 +128,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement Google OAuth
       console.log("Google OAuth initiated");
-      window.location.href = "/auth/google";
+      window.location.href = "http://localhost:3000/auth/google";
     } catch (error) {
       console.error("Google auth failed:", error);
       setIsLoading(false);
@@ -139,7 +140,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement 42 OAuth
       console.log("42 OAuth initiated");
-      window.location.href = "/auth/42";
+      window.location.href = "http://localhost:3000/auth/42";
     } catch (error) {
       console.error("42 auth failed:", error);
       setIsLoading(false);
