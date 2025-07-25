@@ -17,9 +17,26 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
     try {
       // TODO: Implement email registration logic
-      console.log("Email registration:", userData);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const x = {
+        userName: `${userData.firstName}${userData.lastName}`,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+      };
+      console.log("Email registration:", x);
+      fetch("http://localhost:3000/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(x),
+      }).then((res) => {
+        if (!res.ok) {
+          throw new Error("Registration failed");
+        }
+      });
+      // await new Promise((resolve) => setTimeout(resolve, 1000));
       alert(
         "Registration successful! Please check your email to verify your account."
       );

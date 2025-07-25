@@ -13,7 +13,17 @@ const LoginPage: React.FC = () => {
       // TODO: Implement email login logic
       console.log("Email login:", { email, password });
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await fetch("http://localhost:3000/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      }).then((res) => {
+        if (!res.ok) {
+          throw new Error("Login failed");
+        }
+      });
       alert("Login successful!");
     } catch (error) {
       console.error("Login failed:", error);
