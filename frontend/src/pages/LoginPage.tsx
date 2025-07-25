@@ -1,33 +1,97 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaPlay, FaArrowLeft } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
 import SocialAuthButtons from "../components/SocialAuthButtons";
+import Notification from "../components/Notification";
 
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  const handleEmailLogin = async (email: string, password: string) => {
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for authentication
+        });
+
+        // If the response is successful (not 401), user is authenticated
+        if (response.ok) {
+          navigate("/dashboard");
+        }
+        // If 401, user is not authenticated, stay on login page
+      } catch (error) {
+        console.log("Auth check failed:", error);
+        // If there's an error, assume user is not authenticated and stay on page
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigate]);
+
+  const handleUsernameLogin = async (username: string, password: string) => {
     setIsLoading(true);
     try {
-      // TODO: Implement email login logic
-      console.log("Email login:", { email, password });
-      // Simulate API call
-      await fetch("http://localhost:3000/auth/login", {
+      // TODO: Implement username login logic
+      console.log("username login:", { username, password });
+
+      const response = await fetch("http://localhost:3000/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
-      }).then((res) => {
-        if (!res.ok) {
-          throw new Error("Login failed");
-        }
+        credentials: "include", // Include cookies for authentication
+        body: JSON.stringify({ username, password }),
       });
-      alert("Login successful!");
+
+      const responseData = await response.json();
+
+      if (response.ok && responseData.success) {
+        // Success case
+        setNotification({
+          message:
+            responseData.message ||
+            "Login successful! Redirecting to dashboard...",
+          type: "success",
+        });
+
+        // Navigate to dashboard after a short delay to show the success message
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        // Error case
+        let errorMessage = "Login failed. Please try again.";
+
+        if (responseData.message) {
+          if (Array.isArray(responseData.message)) {
+            errorMessage = responseData.message.join(", ");
+          } else {
+            errorMessage = responseData.message;
+          }
+        }
+
+        setNotification({
+          message: errorMessage,
+          type: "error",
+        });
+      }
     } catch (error) {
       console.error("Login failed:", error);
-      alert("Login failed. Please try again.");
+      setNotification({
+        message: "Network error. Please check your connection and try again.",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -38,7 +102,7 @@ const LoginPage: React.FC = () => {
     try {
       // TODO: Implement GitHub OAuth
       console.log("GitHub OAuth initiated");
-      window.location.href = "/auth/github";
+      window.location.href = "http://localhost:3000/auth/github";
     } catch (error) {
       console.error("GitHub auth failed:", error);
       setIsLoading(false);
@@ -50,7 +114,7 @@ const LoginPage: React.FC = () => {
     try {
       // TODO: Implement Google OAuth
       console.log("Google OAuth initiated");
-      window.location.href = "/auth/google";
+      window.location.href = "http://localhost:3000/auth/google";
     } catch (error) {
       console.error("Google auth failed:", error);
       setIsLoading(false);
@@ -62,7 +126,7 @@ const LoginPage: React.FC = () => {
     try {
       // TODO: Implement 42 OAuth
       console.log("42 OAuth initiated");
-      window.location.href = "/auth/42";
+      window.location.href = "http://localhost:3000/auth/42";
     } catch (error) {
       console.error("42 auth failed:", error);
       setIsLoading(false);
@@ -112,8 +176,8 @@ const LoginPage: React.FC = () => {
               <div className="flex-1 border-t border-gray-700"></div>
             </div>
 
-            {/* Email Login Form */}
-            <LoginForm onSubmit={handleEmailLogin} isLoading={isLoading} />
+            {/* Username Login Form */}
+            <LoginForm onSubmit={handleUsernameLogin} isLoading={isLoading} />
 
             {/* Footer Links */}
             <div className="mt-6 text-center space-y-2">
@@ -136,6 +200,15 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };
