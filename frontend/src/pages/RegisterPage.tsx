@@ -1,16 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaPlay, FaArrowLeft } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
 import SocialAuthButtons from "../components/SocialAuthButtons";
 import Notification from "../components/Notification";
 
 const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for authentication
+        });
+
+        // If the response is successful (not 401), user is authenticated
+        if (response.ok) {
+          navigate("/dashboard");
+        }
+        // If 401, user is not authenticated, stay on registration page
+      } catch (error) {
+        console.log("Auth check failed:", error);
+        // If there's an error, assume user is not authenticated and stay on page
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigate]);
 
   const handleEmailRegister = async (userData: {
     username: string;
@@ -47,9 +74,14 @@ const RegisterPage: React.FC = () => {
         setNotification({
           message:
             responseData.message ||
-            "Registration successful! Please check your email to verify your account.",
+            "Registration successful! Redirecting to dashboard...",
           type: "success",
         });
+
+        // Navigate to dashboard after a short delay to show the success message
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
       } else {
         // Error case
         let errorMessage = "Registration failed. Please try again.";
