@@ -134,9 +134,7 @@ const Dashboard = () => {
 
         <DashboardWelcomeMessage currentUser={currentUser} />
 
-        <PopularMoviesSection
-          activeTab={activeTab}
-        />
+        <PopularMoviesSection activeTab={activeTab} />
 
         <WatchedMoviesSection
           activeTab={activeTab}

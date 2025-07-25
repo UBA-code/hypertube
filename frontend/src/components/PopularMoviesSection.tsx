@@ -96,7 +96,9 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         );
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch popular movies: ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch popular movies: ${response.statusText}`
+          );
         }
 
         const data: PopularResponse = await response.json();
@@ -166,12 +168,7 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
 
         // Load more results when user is still 1500px from bottom (about 3-4 screen heights)
         // This ensures results are ready before user reaches the end
-        if (
-          distanceFromBottom <= 1500 &&
-          !loading &&
-          !loadingMore &&
-          hasMore
-        ) {
+        if (distanceFromBottom <= 1500 && !loading && !loadingMore && hasMore) {
           const nextPage = currentPage + 1;
           setCurrentPage(nextPage);
           fetchPopularMovies(nextPage, true);
@@ -189,7 +186,14 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         clearTimeout(scrollTimeout);
       }
     };
-  }, [activeTab, currentPage, hasMore, loading, loadingMore, fetchPopularMovies]);
+  }, [
+    activeTab,
+    currentPage,
+    hasMore,
+    loading,
+    loadingMore,
+    fetchPopularMovies,
+  ]);
 
   if (activeTab !== "popular") {
     return null;
@@ -232,7 +236,9 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         <div className="text-center py-12">
           <FaSearch className="mx-auto text-4xl text-gray-600 mb-4" />
           <h3 className="text-xl font-bold">No popular movies found</h3>
-          <p className="text-gray-500">Unable to load popular movies at this time</p>
+          <p className="text-gray-500">
+            Unable to load popular movies at this time
+          </p>
         </div>
       ) : (
         <>

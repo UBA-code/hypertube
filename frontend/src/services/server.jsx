@@ -216,13 +216,16 @@ const mockMovies = [
 // API functions that return promises with mock data
 export const getPopularMovies = async (page = 1) => {
   try {
-    const response = await fetch(`http://localhost:3000/movies/popular?page=${page}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include", // Include cookies for authentication
-    });
+    const response = await fetch(
+      `http://localhost:3000/movies/popular?page=${page}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to fetch popular movies: ${response.statusText}`);
