@@ -197,7 +197,7 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    return res.redirect(`${process.env.CLIENT_URL}/`);
+    return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
   }
 
   @Get('google')
@@ -221,7 +221,7 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    return res.redirect(`${process.env.CLIENT_URL}/`);
+    return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
   }
 
   @Get('github')
@@ -246,7 +246,7 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    return res.redirect(`${process.env.CLIENT_URL}/`);
+    return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
   }
 
   @Get('me')
