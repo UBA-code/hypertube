@@ -55,6 +55,13 @@ const HeroSection: React.FC = () => {
     navigate("/dashboard");
   };
 
+  const handleHowItWorks = () => {
+    const element = document.getElementById("how-it-works");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   const formatDuration = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -94,7 +101,10 @@ const HeroSection: React.FC = () => {
           >
             Start Watching Free
           </button>
-          <button className="px-8 py-4 bg-gray-800 rounded-lg text-lg font-semibold hover:bg-gray-700 transition flex items-center">
+          <button
+            onClick={handleHowItWorks}
+            className="px-8 py-4 bg-gray-800 rounded-lg text-lg font-semibold hover:bg-gray-700 transition flex items-center"
+          >
             <span>How It Works</span>
             <FaArrowRight className="ml-2" />
           </button>
@@ -134,6 +144,11 @@ const HeroSection: React.FC = () => {
               </h3>
               <div className="flex justify-center space-x-2 mb-3">
                 <span className="bg-red-600 px-2 py-1 rounded text-sm">HD</span>
+                {!loading && featuredMovie?.duration && (
+                  <span className="bg-gray-700 px-2 py-1 rounded text-sm">
+                    {formatDuration(featuredMovie.duration)}
+                  </span>
+                )}
                 {!loading &&
                   featuredMovie?.genres &&
                   featuredMovie.genres.length > 0 && (
