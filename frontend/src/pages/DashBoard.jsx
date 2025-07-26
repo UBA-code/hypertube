@@ -170,8 +170,10 @@ const Dashboard = () => {
       {/* Sidebar */}
       <div className="w-64 bg-gray-800 p-4 hidden md:flex flex-col">
         <div className="flex items-center space-x-3 mb-10 mt-2">
-          <RiMovie2Line className="text-red-500 text-3xl" />
-          <h1 className="text-2xl font-bold">Hypertube</h1>
+          <FaPlay className="text-red-600 text-3xl" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-purple-600 bg-clip-text text-transparent">
+            Hypertube
+          </h1>
         </div>
 
         <div className="mb-8 flex items-center space-x-3 p-3 bg-gray-700 rounded-lg">
@@ -195,7 +197,9 @@ const Dashboard = () => {
             <li>
               <button
                 className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                  activeTab === "popular" ? "bg-red-600" : "hover:bg-gray-700"
+                  activeTab === "popular"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "hover:bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("popular")}
               >
@@ -206,7 +210,9 @@ const Dashboard = () => {
             <li>
               <button
                 className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                  activeTab === "watched" ? "bg-red-600" : "hover:bg-gray-700"
+                  activeTab === "watched"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "hover:bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("watched")}
               >
@@ -217,7 +223,9 @@ const Dashboard = () => {
             <li>
               <button
                 className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                  activeTab === "library" ? "bg-red-600" : "hover:bg-gray-700"
+                  activeTab === "library"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "hover:bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("library")}
               >
@@ -228,7 +236,9 @@ const Dashboard = () => {
             <li>
               <button
                 className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                  activeTab === "downloads" ? "bg-red-600" : "hover:bg-gray-700"
+                  activeTab === "downloads"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "hover:bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("downloads")}
               >
@@ -265,8 +275,10 @@ const Dashboard = () => {
             >
               ☰
             </button>
-            <RiMovie2Line className="text-red-500 text-2xl mr-2" />
-            <h1 className="text-xl font-bold">Hypertube</h1>
+            <FaPlay className="text-red-600 text-2xl mr-2" />
+            <h1 className="text-xl font-bold bg-gradient-to-r from-red-600 to-purple-600 bg-clip-text text-transparent">
+              Hypertube
+            </h1>
           </div>
 
           <div className="relative w-full max-w-md">
@@ -276,7 +288,7 @@ const Dashboard = () => {
             <input
               type="text"
               placeholder="Search movies..."
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full pl-10 pr-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -305,7 +317,9 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 className={`p-3 rounded-lg transition ${
-                  activeTab === "popular" ? "bg-red-600" : "bg-gray-700"
+                  activeTab === "popular"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("popular")}
               >
@@ -313,7 +327,9 @@ const Dashboard = () => {
               </button>
               <button
                 className={`p-3 rounded-lg transition ${
-                  activeTab === "watched" ? "bg-red-600" : "bg-gray-700"
+                  activeTab === "watched"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("watched")}
               >
@@ -321,7 +337,9 @@ const Dashboard = () => {
               </button>
               <button
                 className={`p-3 rounded-lg transition ${
-                  activeTab === "library" ? "bg-red-600" : "bg-gray-700"
+                  activeTab === "library"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("library")}
               >
@@ -329,7 +347,9 @@ const Dashboard = () => {
               </button>
               <button
                 className={`p-3 rounded-lg transition ${
-                  activeTab === "downloads" ? "bg-red-600" : "bg-gray-700"
+                  activeTab === "downloads"
+                    ? "bg-gradient-to-r from-red-600 to-purple-600"
+                    : "bg-gray-700"
                 }`}
                 onClick={() => setActiveTab("downloads")}
               >
@@ -343,7 +363,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold">
             Welcome back,{" "}
-            <span className="text-red-500">
+            <span className="bg-gradient-to-r from-red-600 to-purple-600 bg-clip-text text-transparent">
               {currentUser?.firstName || currentUser?.username}
             </span>
           </h1>
@@ -445,7 +465,7 @@ const Dashboard = () => {
               <p className="text-gray-500 mb-4">
                 Add movies to your library to watch later
               </p>
-              <button className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition">
+              <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg hover:opacity-90 transition">
                 Browse Movies
               </button>
             </div>
@@ -466,7 +486,7 @@ const Dashboard = () => {
               <p className="text-gray-500 mb-4">
                 Download movies to watch offline
               </p>
-              <button className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition">
+              <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg hover:opacity-90 transition">
                 Find Movies to Download
               </button>
             </div>
@@ -499,7 +519,7 @@ const MovieCard = ({ movie, type = "standard" }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="absolute bottom-0 left-0 right-0 p-3">
             <div className="flex justify-between items-center">
-              <button className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition">
+              <button className="w-10 h-10 bg-gradient-to-r from-red-600 to-purple-600 rounded-full flex items-center justify-center hover:opacity-90 transition">
                 <FaPlay className="ml-1" />
               </button>
 
@@ -592,7 +612,7 @@ const WatchedMovieItem = ({ movie }) => {
         </div>
       </div>
 
-      <button className="mr-4 w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition">
+      <button className="mr-4 w-10 h-10 bg-gradient-to-r from-red-600 to-purple-600 rounded-full flex items-center justify-center hover:opacity-90 transition">
         <FaPlay className="ml-1" />
       </button>
     </div>
