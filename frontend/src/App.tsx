@@ -19,7 +19,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/results" element={<SearchResults />} />
-          <Route path="/movie/:imdbId" element={<MovieDetails />} />
+          <Route path="/movies/:imdbId" element={<MovieDetails />} />
         </Routes>
       </div>
     </Router>

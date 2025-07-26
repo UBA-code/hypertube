@@ -60,7 +60,7 @@ const SearchMovieCard: React.FC<{ movie: Movie }> = ({ movie }) => {
 
   // Handle movie click to navigate to details page
   const handleMovieClick = () => {
-    navigate(`/movie/${movie.imdbId}`);
+    navigate(`/movies/${movie.imdbId}`);
   };
 
   return (
