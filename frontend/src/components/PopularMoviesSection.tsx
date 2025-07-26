@@ -160,40 +160,59 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
 
       // Throttle scroll events to prevent excessive calls
       scrollTimeout = setTimeout(() => {
-        const scrollTop =
-          window.pageYOffset || document.documentElement.scrollTop;
-        const windowHeight = window.innerHeight;
-        const documentHeight = document.documentElement.scrollHeight;
+        // Get the scrollable container - try both window and main content container
+        const mainContent = document.querySelector(".overflow-y-auto");
+        const isMainContentScrollable =
+          mainContent && mainContent.scrollHeight > mainContent.clientHeight;
+
+        let scrollTop, windowHeight, documentHeight;
+
+        if (isMainContentScrollable) {
+          // If main content is scrollable, use its dimensions
+          scrollTop = mainContent.scrollTop;
+          windowHeight = mainContent.clientHeight;
+          documentHeight = mainContent.scrollHeight;
+        } else {
+          // Fallback to window
+          scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          windowHeight = window.innerHeight;
+          documentHeight = document.documentElement.scrollHeight;
+        }
+
         const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
 
         // Load more results when user is still 1500px from bottom (about 3-4 screen heights)
         // This ensures results are ready before user reaches the end
         if (distanceFromBottom <= 1500 && !loading && !loadingMore && hasMore) {
-          const nextPage = currentPage + 1;
-          setCurrentPage(nextPage);
-          fetchPopularMovies(nextPage, true);
+          console.log("Triggering load more...");
+          setCurrentPage((prevPage) => {
+            const nextPage = prevPage + 1;
+            console.log(`Loading page ${nextPage}`);
+            fetchPopularMovies(nextPage, true);
+            return nextPage;
+          });
         }
       }, 200); // 200ms throttle
     };
 
-    // Add scroll listener
-    window.addEventListener("scroll", handleScroll);
+    console.log("Adding scroll listener for popular movies");
+
+    // Try to attach to the main scrollable container first
+    const mainContent = document.querySelector(".overflow-y-auto");
+    const scrollElement = mainContent || window;
+
+    // Add scroll listener to the appropriate element
+    scrollElement.addEventListener("scroll", handleScroll);
 
     // Cleanup
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      console.log("Removing scroll listener for popular movies");
+      scrollElement.removeEventListener("scroll", handleScroll);
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
     };
-  }, [
-    activeTab,
-    currentPage,
-    hasMore,
-    loading,
-    loadingMore,
-    fetchPopularMovies,
-  ]);
+  }, [activeTab, hasMore, loading, loadingMore, fetchPopularMovies]);
 
   if (activeTab !== "popular") {
     return null;
