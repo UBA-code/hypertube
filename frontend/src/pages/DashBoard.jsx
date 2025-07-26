@@ -16,11 +16,7 @@ import { MdLocalMovies, MdDownload, MdTrendingUp } from "react-icons/md";
 import { RiMovie2Line } from "react-icons/ri";
 
 // Mock API service that returns promises with data matching your plan structure
-import {
-  getPopularMovies,
-  getWatchedMovies,
-  getCurrentUser,
-} from "../services/server";
+import { getPopularMovies, getWatchedMovies } from "../services/server";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -50,7 +46,9 @@ const Dashboard = () => {
           return;
         }
 
-        // If successful, user is authenticated, continue with dashboard
+        // If successful, user is authenticated, get user data
+        const userData = await response.json();
+        setCurrentUser(userData);
       } catch (error) {
         console.log("Auth check failed:", error);
         // If there's an error, assume user is not authenticated and redirect
@@ -67,16 +65,14 @@ const Dashboard = () => {
       try {
         setLoading(true);
 
-        // Fetch all data simultaneously
-        const [popular, watched, user] = await Promise.all([
+        // Fetch movie data (user data is already fetched from auth check)
+        const [popular, watched] = await Promise.all([
           getPopularMovies(),
           getWatchedMovies(),
-          getCurrentUser(),
         ]);
 
         setPopularMovies(popular);
         setWatchedMovies(watched);
-        setCurrentUser(user);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -84,8 +80,11 @@ const Dashboard = () => {
       }
     };
 
-    fetchData();
-  }, []);
+    // Only fetch data if user is authenticated (currentUser is set)
+    if (currentUser) {
+      fetchData();
+    }
+  }, [currentUser]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -180,14 +179,14 @@ const Dashboard = () => {
           {currentUser?.profilePicture ? (
             <img
               src={currentUser.profilePicture}
-              alt={currentUser.username}
+              alt={currentUser.userName}
               className="w-10 h-10 rounded-full"
             />
           ) : (
             <FaUserCircle className="text-gray-400 text-3xl" />
           )}
           <div>
-            <p className="font-semibold">{currentUser?.username}</p>
+            <p className="font-semibold">{currentUser?.userName}</p>
             <p className="text-sm text-gray-400">Premium Member</p>
           </div>
         </div>
@@ -302,7 +301,7 @@ const Dashboard = () => {
             {currentUser?.profilePicture ? (
               <img
                 src={currentUser.profilePicture}
-                alt={currentUser.username}
+                alt={currentUser.userName}
                 className="w-10 h-10 rounded-full"
               />
             ) : (
@@ -364,7 +363,7 @@ const Dashboard = () => {
           <h1 className="text-2xl md:text-3xl font-bold">
             Welcome back,{" "}
             <span className="bg-gradient-to-r from-red-600 to-purple-600 bg-clip-text text-transparent">
-              {currentUser?.firstName || currentUser?.username}
+              {currentUser?.firstName || currentUser?.userName}
             </span>
           </h1>
           <p className="text-gray-400">Ready to continue your movie journey?</p>
