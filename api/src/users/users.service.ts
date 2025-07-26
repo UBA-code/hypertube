@@ -109,6 +109,14 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
+  async findOneOrCreateByEmail(email: string, user: User): Promise<User> {
+    const userFound = await this.usersRepository.findOneBy({ email });
+    if (userFound && userFound.authType === user.authType) {
+      return userFound;
+    }
+    return await this.usersRepository.save(user);
+  }
+
   async idIsFound(id: number): Promise<boolean> {
     const user = await this.usersRepository.count({ where: { id } });
     return !!user;
