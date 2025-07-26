@@ -4,14 +4,16 @@ import {
   Controller,
   Get,
   Param,
+  ParseBoolPipe,
   Post,
   Query,
   Req,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import MoviesSearchResponse from './types/moviesSearchResponse';
+import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
 import { Request } from 'express';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('movies')
 export class MoviesController {
@@ -139,7 +141,10 @@ export class MoviesController {
     if (!imdbId) {
       throw new BadRequestException('Movie ID is required');
     }
-    return await this.moviesService.getMovieDetails(req['user']['id'], imdbId);
+    return plainToInstance(
+      MovieDto,
+      await this.moviesService.getMovieByImdbId(req['user']['id'], imdbId),
+    );
   }
 
   @Post('watched')
@@ -149,5 +154,31 @@ export class MoviesController {
     return {
       message: 'Movie is marked as watched',
     };
+  }
+
+  @Post('favorite/:imdbId')
+  async changeFavoriteStatus(
+    @Req() req: Request,
+    @Param('imdbId') imdbId: string,
+    @Body('setTo', ParseBoolPipe) setTo: boolean,
+  ) {
+    const user = req['user'];
+    if (!imdbId) {
+      throw new BadRequestException('Movie ID is required');
+    }
+    await this.moviesService.changeFavoriteStatus(user['id'], imdbId, setTo);
+    if (setTo)
+      return {
+        message: 'Movie is added to favorites',
+      };
+    else
+      return {
+        message: 'Movie is removed from favorites',
+      };
+  }
+
+  @Get('/library/favorites')
+  async getFavoritesMovies(@Req() req: Request) {
+    return await this.moviesService.getFavoritesMovies(req['user']['id']);
   }
 }

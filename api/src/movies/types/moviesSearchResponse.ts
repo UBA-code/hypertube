@@ -120,9 +120,11 @@ export class MovieDto {
   @ApiProperty()
   downloadStatus: 'not_started' | 'downloading' | 'completed';
   @ApiProperty()
-  streamUrl: string;
+  streamUrl?: string;
   @ApiProperty()
-  isWatched: boolean;
+  isWatched?: boolean;
+  @ApiProperty()
+  isFavorite?: boolean;
   @ApiProperty()
   lastWatched?: Date | null;
 }

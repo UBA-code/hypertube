@@ -156,6 +156,17 @@ export class UsersService {
     return 'Avatar updated successfully';
   }
 
+  async isFavoriteMovie(userId: number, movieId: string): Promise<boolean> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['favoriteMovies'],
+    });
+
+    if (!user) throw new NotFoundException(`User with id ${userId} not found`);
+
+    return user.favoriteMovies.some((movie) => movie.imdbId === movieId);
+  }
+
   async hashPassword(password: string): Promise<string> {
     const hash = await bcrypt.hash(password, 10);
 

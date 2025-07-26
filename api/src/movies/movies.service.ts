@@ -16,6 +16,7 @@ import Genre from './entities/genre.entity';
 import { tmdbGenres } from './constants/tmdbGenres';
 import { TmdbSearchResponse } from './types/TmdbSearchResponse';
 import { TMDBMovieDetails } from './types/tmdbMovieDetails';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class MoviesService {
@@ -260,7 +261,14 @@ export class MoviesService {
     };
   }
 
-  async getMovieDetails(userId: number, imdbId: string): Promise<MovieDto> {
+  async getMovieByImdbId(userId: number, imdbId: string): Promise<MovieDto> {
+    return {
+      ...plainToInstance(MovieDto, await this.getMovieDetails(userId, imdbId)),
+      isFavorite: await this.usersService.isFavoriteMovie(userId, imdbId),
+    };
+  }
+
+  async getMovieDetails(userId: number, imdbId: string): Promise<Movie> {
     let searchResult: MovieDto;
     if (imdbId[0] === 't') {
       try {
@@ -284,35 +292,9 @@ export class MoviesService {
       }
     }
     if (!(await this.movieRepository.findOneBy({ imdbId }))) {
-      const movie = this.movieRepository.create({
-        title: searchResult.title,
-        year: searchResult.year,
-        imdbRating: searchResult.imdbRating,
-        imdbId: searchResult.imdbId,
-        genres: searchResult.genres.map((name) => ({ name })),
-        duration: searchResult.duration,
-        synopsis: searchResult.synopsis,
-        coverImage: searchResult.coverImage,
-        directors: searchResult.cast.directors.map((name) => ({ name })),
-        producers: searchResult.cast.producers.map((name) => ({ name })),
-        actors: searchResult.cast.actors.map((name) => ({ name })),
-        torrents: searchResult.torrents.map((torrent) => ({
-          magnetLink: torrent.magnetLink,
-          quality: torrent.quality,
-          size: torrent.size,
-          seeders: torrent.seeders,
-          leechers: torrent.leechers,
-        })),
-        subtitles: [],
-        comments: [],
-        downloadStatus: 'not_started',
-        streamUrl: '',
-        lastWatched: null,
-        usersWatched: [],
-      });
-      await this.movieRepository.save(movie);
+      return await this.saveMovie(searchResult);
     }
-    return searchResult;
+    return await this.movieRepository.findOneBy({ imdbId });
   }
 
   async getTmdbMovieDetails(
@@ -478,5 +460,70 @@ export class MoviesService {
       console.error('Error fetching movie details:', error);
       return null;
     }
+  }
+
+  async saveMovie(movie: MovieDto): Promise<Movie> {
+    const newMovie = this.movieRepository.create({
+      title: movie.title,
+      year: movie.year,
+      imdbRating: movie.imdbRating,
+      imdbId: movie.imdbId,
+      genres: movie.genres.map((name) => ({ name })),
+      duration: movie.duration,
+      synopsis: movie.synopsis,
+      coverImage: movie.coverImage,
+      directors: movie.cast.directors.map((name) => ({ name })),
+      producers: movie.cast.producers.map((name) => ({ name })),
+      actors: movie.cast.actors.map((name) => ({ name })),
+      torrents: movie.torrents.map((torrent) => ({
+        magnetLink: torrent.magnetLink,
+        quality: torrent.quality,
+        size: torrent.size,
+        seeders: torrent.seeders,
+        leechers: torrent.leechers,
+      })),
+      subtitles: [],
+      comments: [],
+      downloadStatus: 'not_started',
+      streamUrl: '',
+      lastWatched: null,
+      usersWatched: [],
+    });
+    return await this.movieRepository.save(newMovie);
+  }
+
+  async changeFavoriteStatus(userId: number, imdbId: string, setTo: boolean) {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['favoriteMovies'],
+    });
+    let movie = await this.movieRepository.findOneBy({ imdbId });
+
+    if (!movie) {
+      movie = await this.getMovieDetails(userId, imdbId);
+    }
+
+    if (setTo && user.favoriteMovies.some((m) => movie.imdbId === m.imdbId)) {
+      throw new BadRequestException('movie already in favorite');
+    }
+
+    if (setTo) {
+      user.favoriteMovies.push(movie);
+    } else {
+      user.favoriteMovies = user.favoriteMovies.filter(
+        (m) => m.imdbId !== imdbId,
+      );
+    }
+
+    await this.usersService.saveUser(user);
+  }
+
+  async getFavoritesMovies(userId: number) {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['favoriteMovies'],
+    });
+
+    return user.favoriteMovies;
   }
 }

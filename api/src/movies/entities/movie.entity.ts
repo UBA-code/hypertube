@@ -83,4 +83,7 @@ export default class Movie {
 
   @ManyToMany(() => User, (user) => user.watchedMovies)
   usersWatched: User[];
+
+  @ManyToMany(() => User, (user) => user.favoriteMovies)
+  usersLiked: User[];
 }

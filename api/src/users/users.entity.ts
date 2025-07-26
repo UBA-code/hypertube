@@ -50,6 +50,12 @@ export class User {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
+  @ManyToMany(() => Movie, (movie) => movie.usersLiked, {
+    cascade: ['insert'],
+  })
+  @JoinTable()
+  favoriteMovies: Movie[];
+
   @OneToMany(() => RevokedToken, (token) => token.user, { cascade: true })
   revokedTokens: RevokedToken[];
 }
