@@ -9,7 +9,7 @@ import {
   FaStar,
 } from "react-icons/fa";
 import { MdAccessTime, MdDateRange } from "react-icons/md";
-import { CommentsSection } from "../components";
+import { CommentsSection, DashboardTopBar } from "../components";
 
 interface Movie {
   imdbId: string;
@@ -57,6 +57,9 @@ const MovieDetails: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{
     id: number;
     username: string;
+    userName: string;
+    firstName?: string;
+    profilePicture?: string;
   } | null>(null);
 
   // Check if user is authenticated and get user data
@@ -214,6 +217,15 @@ const MovieDetails: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      {/* Top Bar */}
+      <div className="bg-gray-900 px-4 md:px-6 py-4">
+        <DashboardTopBar
+          currentUser={currentUser}
+          showMobileMenu={false}
+          showNotification={false}
+        />
+      </div>
+
       {/* Hero Section with Background */}
       <div
         className="relative h-96 bg-cover bg-center"

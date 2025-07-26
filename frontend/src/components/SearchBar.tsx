@@ -13,13 +13,15 @@ interface SearchResult {
 interface SearchBarProps {
   placeholder?: string;
   className?: string;
+  defaultValue?: string; // Add default value prop
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = "Search movies...",
   className = "relative w-full max-w-md",
+  defaultValue = "",
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(defaultValue);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,6 +30,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number | undefined>(undefined);
+
+  // Update search query if defaultValue changes
+  useEffect(() => {
+    setSearchQuery(defaultValue);
+  }, [defaultValue]);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -145,7 +152,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const handleResultClick = (imdbId: string) => {
     setShowResults(false);
     setSearchQuery("");
-    navigate(`/movie/${imdbId}`);
+    navigate(`/movies/${imdbId}`);
   };
 
   // Clear search
