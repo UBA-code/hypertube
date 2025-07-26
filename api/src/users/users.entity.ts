@@ -20,7 +20,7 @@ export class User {
   @Column()
   email: string;
 
-  @Column({ unique: true })
+  @Column()
   userName: string;
 
   @Column()
