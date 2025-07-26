@@ -39,6 +39,7 @@ export class CommentsController {
   @Post(':movieImdbId/comments')
   async addComment(
     @Req() req: Request,
+    @Param('movieImdbId') movieImdbId: string,
     @Body(ValidationPipe) payload: CreateCommentDto,
   ) {
     if (!payload.content) {
@@ -46,7 +47,7 @@ export class CommentsController {
     }
     return this.commentsService.addComment(
       req.user['id'],
-      payload.movieImdbId,
+      movieImdbId,
       payload.content,
     );
   }
