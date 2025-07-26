@@ -277,6 +277,8 @@ export class MoviesService {
     } else {
       try {
         searchResult = await this.getTmdbMovieDetails(userId, imdbId);
+        if (!searchResult.imdbId)
+          throw new BadRequestException('Movie not found on TMDB');
       } catch {
         throw new BadRequestException('Movie not found on TMDB');
       }
