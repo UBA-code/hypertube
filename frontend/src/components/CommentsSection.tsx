@@ -46,20 +46,20 @@ const DeleteConfirmationModal: React.FC<{
   // Handle escape key press
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isDeleting) {
+      if (event.key === "Escape" && !isDeleting) {
         onCancel();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
       // Prevent body scrolling when modal is open
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
     };
   }, [isOpen, onCancel, isDeleting]);
 
@@ -72,7 +72,7 @@ const DeleteConfirmationModal: React.FC<{
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn"
       onClick={handleBackdropClick}
     >
@@ -87,11 +87,12 @@ const DeleteConfirmationModal: React.FC<{
             <FaTimes />
           </button>
         </div>
-        
+
         <p className="text-gray-300 mb-6 leading-relaxed">
-          Are you sure you want to delete this comment? This action cannot be undone.
+          Are you sure you want to delete this comment? This action cannot be
+          undone.
         </p>
-        
+
         <div className="flex space-x-3 justify-end">
           <button
             onClick={onCancel}
@@ -155,7 +156,7 @@ const CommentItem: React.FC<{
   const handleDelete = async () => {
     if (isDeleting) return;
     setIsDeleting(true);
-    
+
     try {
       const response = await fetch(
         `http://localhost:3000/movies/comments/${comment.id}`,
@@ -222,7 +223,7 @@ const CommentItem: React.FC<{
       </div>
 
       <p className="text-gray-300 leading-relaxed pl-11">{comment.content}</p>
-      
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
