@@ -14,7 +14,12 @@ export class CommentsService {
     private usersService: UsersService,
   ) {}
 
-  async getCommentsByImdbId(imdbId: string, page: number, limit: number) {
+  async getCommentsByImdbId(
+    imdbId: string,
+    page: number,
+    limit: number,
+    sortBy: 'DESC' | 'ASC' = 'DESC',
+  ) {
     return await this.commentRepository.find({
       where: {
         movie: { imdbId: imdbId },
@@ -22,6 +27,9 @@ export class CommentsService {
       relations: ['movie'],
       skip: (page - 1) * limit,
       take: limit,
+      order: {
+        createdAt: sortBy,
+      },
     });
   }
 
@@ -36,6 +44,7 @@ export class CommentsService {
     comment.content = content;
     comment.movie = movie;
     comment.username = user.userName;
+    comment.userAvatar = user.profilePicture;
     comment.userId = userId;
 
     await this.commentRepository.save(comment);

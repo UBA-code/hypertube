@@ -21,6 +21,9 @@ export default class Comment {
   @Column()
   userId: number;
 
+  @Column()
+  userAvatar: string;
+
   @ManyToOne(() => Movie, (movie) => movie.comments, { cascade: ['insert'] })
   @JoinColumn({ name: 'movieId' })
   movie: Movie;

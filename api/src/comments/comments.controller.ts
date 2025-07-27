@@ -17,22 +17,50 @@ import { Request } from 'express';
 import CommentDto from './dto/comments.dto';
 import { plainToInstance } from 'class-transformer';
 import CreateCommentDto from './dto/createComment.dto';
+import { ApiQuery } from '@nestjs/swagger';
 
 @Controller('movies')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Get(':movieImdbId/comments')
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number for pagination',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of comments per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    description: 'Sort order for comments (ASC or DESC)',
+    enum: ['ASC', 'DESC'],
+    default: 'DESC',
+  })
   async getMovieComments(
     @Param('movieImdbId') imdbId: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe)
     page: number = 1,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe)
     limit: number = 10,
+    @Query('sortBy', new DefaultValuePipe('DESC'))
+    sortBy: 'DESC' | 'ASC' = 'DESC',
   ): Promise<CommentDto> {
+    if (sortBy !== 'DESC' && sortBy !== 'ASC') {
+      throw new BadRequestException(
+        'Invalid sortBy value. Use "DESC" or "ASC".',
+      );
+    }
     return plainToInstance(
       CommentDto,
-      this.commentsService.getCommentsByImdbId(imdbId, page, limit),
+      this.commentsService.getCommentsByImdbId(imdbId, page, limit, sortBy),
     );
   }
 

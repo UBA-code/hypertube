@@ -13,7 +13,6 @@ import { MoviesService } from './movies.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
 import { Request } from 'express';
-import { plainToInstance } from 'class-transformer';
 
 @Controller('movies')
 export class MoviesController {
@@ -137,13 +136,13 @@ export class MoviesController {
     description: 'Returns movie details',
     type: MoviesSearchResponse,
   })
-  async getMovieDetails(@Req() req: Request, @Param('imdbId') imdbId: string) {
-    if (!imdbId) {
-      throw new BadRequestException('Movie ID is required');
-    }
-    return plainToInstance(
-      MovieDto,
-      await this.moviesService.getMovieByImdbId(req['user']['id'], imdbId),
+  async getMovieDetails(
+    @Req() req: Request,
+    @Param('imdbId') imdbId: string,
+  ): Promise<MovieDto> {
+    return await this.moviesService.getMovieDetailsByImdbId(
+      req['user']['id'],
+      imdbId,
     );
   }
 
