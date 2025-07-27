@@ -339,7 +339,7 @@ export class MoviesService {
         title: tmdbSearchResult.title,
         coverImage: `https://image.tmdb.org/t/p/w500${tmdbSearchResult.poster_path}`,
         year: parseInt(tmdbSearchResult.release_date.split('-')[0]),
-        genres: tmdbSearchResult.genres.map((g) => g.name),
+        genres: tmdbSearchResult?.genres?.map((g) => g.name),
         synopsis: tmdbSearchResult.overview,
         duration: tmdbSearchResult.runtime,
         imdbRating: tmdbSearchResult.vote_average,
@@ -347,14 +347,14 @@ export class MoviesService {
           (watchedMovie) => watchedMovie.imdbId === tmdbSearchResult.imdb_id,
         ),
         cast: {
-          actors: tmdbSearchResult.credits.cast
-            .filter((cast) => cast.known_for_department === 'Acting')
+          actors: tmdbSearchResult?.credits?.cast
+            ?.filter((cast) => cast.known_for_department === 'Acting')
             .map((cast) => cast.name),
-          producers: tmdbSearchResult.credits.crew
-            .filter((crew) => crew.known_for_department === 'Production')
+          producers: tmdbSearchResult?.credits?.crew
+            ?.filter((crew) => crew.known_for_department === 'Production')
             .map((crew) => crew.name),
-          directors: tmdbSearchResult.credits.crew
-            .filter((crew) => crew.known_for_department === 'Directing')
+          directors: tmdbSearchResult?.credits?.crew
+            ?.filter((crew) => crew.known_for_department === 'Directing')
             .map((crew) => crew.name),
         },
         torrents: withTorrents ? [] : [], // TMDB does not provide torrent info
@@ -399,11 +399,11 @@ export class MoviesService {
         duration: ytsSearchResult.runtime,
         streamUrl: '',
         cast: {
-          actors: ytsSearchResult.cast.map((actor) => actor.name),
+          actors: ytsSearchResult?.cast?.map((actor) => actor.name),
           directors: [],
           producers: [],
         },
-        torrents: ytsSearchResult.torrents.map(
+        torrents: ytsSearchResult?.torrents?.map(
           (torrent): TorrentDto => ({
             magnetLink: torrent.url,
             quality: torrent.quality,
@@ -488,10 +488,10 @@ export class MoviesService {
       duration: movie.duration,
       synopsis: movie.synopsis,
       coverImage: movie.coverImage,
-      directors: movie.cast.directors.map((name) => ({ name })),
-      producers: movie.cast.producers.map((name) => ({ name })),
-      actors: movie.cast.actors.map((name) => ({ name })),
-      torrents: movie.torrents.map((torrent) => ({
+      directors: movie?.cast?.directors?.map((name) => ({ name })),
+      producers: movie?.cast?.producers?.map((name) => ({ name })),
+      actors: movie?.cast?.actors?.map((name) => ({ name })),
+      torrents: movie?.torrents?.map((torrent) => ({
         magnetLink: torrent.magnetLink,
         quality: torrent.quality,
         size: torrent.size,
