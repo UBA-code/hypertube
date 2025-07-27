@@ -15,6 +15,9 @@ export default class CommentDto {
   @ApiProperty()
   userId: number;
 
+  @ApiProperty()
+  userAvatar: string;
+
   @Exclude()
   movie: Movie;
 
