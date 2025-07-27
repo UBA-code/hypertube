@@ -215,6 +215,10 @@ export class MoviesService {
     filterByGenre?: string,
     filterByRating?: number,
   ): Promise<MoviesSearchResponse> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['favoriteMovies'],
+    });
     const ytsSearchResult = await this.getYtsSearchResult(
       userId,
       query,
@@ -247,7 +251,13 @@ export class MoviesService {
           (movie.year === parseInt(filterByYear) || !filterByYear) &&
           (Math.floor(movie.imdbRating) === Math.floor(filterByRating) ||
             !filterByRating),
-      ); // filter by genre and year and rating if provided
+      )
+      .map((movie) => {
+        movie.isFavorite = user.favoriteMovies.some(
+          (favMovie) => favMovie.imdbId === movie.imdbId,
+        );
+        return movie;
+      });
 
     if (sort == 'title' || (query && query.length > 0)) {
       mergedMovies.sort((a, b) => a.title.localeCompare(b.title));
