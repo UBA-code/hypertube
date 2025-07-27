@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Movie from './entities/movie.entity';
 import { Like, Repository } from 'typeorm';
@@ -16,7 +20,6 @@ import Genre from './entities/genre.entity';
 import { tmdbGenres } from './constants/tmdbGenres';
 import { TmdbSearchResponse } from './types/TmdbSearchResponse';
 import { TMDBMovieDetails } from './types/tmdbMovieDetails';
-import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class MoviesService {
@@ -261,15 +264,30 @@ export class MoviesService {
     };
   }
 
-  async getMovieByImdbId(userId: number, imdbId: string): Promise<MovieDto> {
+  async getMovieDetailsByImdbId(
+    userId: number,
+    imdbId: string,
+  ): Promise<MovieDto> {
+    if (!imdbId || imdbId.length === 0) {
+      throw new BadRequestException('Movie ID is required');
+    }
     return {
-      ...plainToInstance(MovieDto, await this.getMovieDetails(userId, imdbId)),
-      isFavorite: await this.usersService.isFavoriteMovie(userId, imdbId),
+      ...this.convertToMovieDto(await this.saveAndReturnMovie(userId, imdbId)),
+      isFavorite: await this.isFavoriteMovie(userId, imdbId),
     };
   }
 
-  async getMovieDetails(userId: number, imdbId: string): Promise<Movie> {
+  async saveAndReturnMovie(userId: number, imdbId: string): Promise<Movie> {
     let searchResult: MovieDto;
+    const movie = await this.movieRepository.findOne({
+      where: { imdbId },
+      relations: ['genres', 'actors', 'directors', 'producers', 'torrents'],
+    });
+
+    if (movie) {
+      return movie;
+    }
+
     if (imdbId[0] === 't') {
       try {
         searchResult = await this.getYtsMovieDetails(userId, imdbId);
@@ -291,10 +309,8 @@ export class MoviesService {
         throw new BadRequestException('Movie not found on TMDB');
       }
     }
-    if (!(await this.movieRepository.findOneBy({ imdbId }))) {
-      return await this.saveMovie(searchResult);
-    }
-    return await this.movieRepository.findOneBy({ imdbId });
+
+    return await this.saveMovie(searchResult);
   }
 
   async getTmdbMovieDetails(
@@ -500,7 +516,7 @@ export class MoviesService {
     let movie = await this.movieRepository.findOneBy({ imdbId });
 
     if (!movie) {
-      movie = await this.getMovieDetails(userId, imdbId);
+      movie = await this.saveAndReturnMovie(userId, imdbId);
     }
 
     if (setTo && user.favoriteMovies.some((m) => movie.imdbId === m.imdbId)) {
@@ -516,6 +532,49 @@ export class MoviesService {
     }
 
     await this.usersService.saveUser(user);
+  }
+
+  convertToMovieDto(movie: Movie): MovieDto {
+    return {
+      imdbId: movie.imdbId,
+      title: movie.title,
+      year: movie.year,
+      imdbRating: movie.imdbRating,
+      genres: movie?.genres?.map((genre) => genre.name),
+      duration: movie.duration,
+      coverImage: movie.coverImage,
+      isWatched: false, // This will be set later based on user data
+      synopsis: movie.synopsis,
+      cast: {
+        actors: movie?.actors?.map((actor) => actor.name),
+        directors: movie?.directors?.map((director) => director.name),
+        producers: movie?.producers?.map((producer) => producer.name),
+      },
+      torrents: movie?.torrents?.map((torrent) => ({
+        magnetLink: torrent.magnetLink,
+        quality: torrent.quality,
+        size: torrent.size,
+        seeders: torrent.seeders,
+        leechers: torrent.leechers,
+      })),
+      subtitles: movie.subtitles,
+      comments: movie.comments,
+      downloadStatus: movie.downloadStatus,
+      streamUrl: movie.streamUrl,
+      lastWatched: movie.lastWatched,
+      isFavorite: false, // This will be set later based on user data
+    };
+  }
+
+  async isFavoriteMovie(userId: number, movieId: string): Promise<boolean> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['favoriteMovies'],
+    });
+
+    if (!user) throw new NotFoundException(`User with id ${userId} not found`);
+
+    return user.favoriteMovies.some((movie) => movie.imdbId === movieId);
   }
 
   async getFavoritesMovies(userId: number) {
