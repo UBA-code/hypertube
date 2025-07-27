@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { FaUser, FaTrash, FaTimes } from "react-icons/fa";
+import {
+  FaUser,
+  FaTrash,
+  FaTimes,
+  FaSortAmountDown,
+  FaSortAmountUp,
+} from "react-icons/fa";
 import { MdSend } from "react-icons/md";
 
 interface Comment {
@@ -246,13 +252,16 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC");
   const currentPageRef = useRef(1);
 
   // Function to fetch comments
   const fetchComments = useCallback(
     async (page: number, append: boolean = false) => {
       try {
-        console.log(`[Comments] Fetching page ${page}, append: ${append}`);
+        console.log(
+          `[Comments] Fetching page ${page}, append: ${append}, sortOrder: ${sortOrder}`
+        );
 
         if (page === 1 && !append) {
           setLoading(true);
@@ -262,7 +271,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
         setError(null);
 
         const response = await fetch(
-          `http://localhost:3000/movies/${movieImdbId}/comments?page=${page}&limit=10`,
+          `http://localhost:3000/movies/${movieImdbId}/comments?page=${page}&limit=10&sortBy=${sortOrder}`,
           {
             method: "GET",
             headers: {
@@ -315,10 +324,10 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
         setLoadingMore(false);
       }
     },
-    [movieImdbId]
+    [movieImdbId, sortOrder]
   );
 
-  // Initial load when component mounts
+  // Initial load when component mounts or sort order changes
   useEffect(() => {
     if (movieImdbId) {
       setComments([]);
@@ -326,7 +335,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       currentPageRef.current = 1;
       fetchComments(1, false);
     }
-  }, [movieImdbId, fetchComments]);
+  }, [movieImdbId, fetchComments, sortOrder]);
 
   // Infinite scroll handler
   useEffect(() => {
@@ -436,9 +445,36 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     setComments((prev) => prev.filter((comment) => comment.id !== commentId));
   };
 
+  // Function to toggle sort order
+  const handleSortToggle = () => {
+    setSortOrder((prevOrder) => (prevOrder === "DESC" ? "ASC" : "DESC"));
+  };
+
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-bold mb-6">Comments ({comments.length})</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">Comments ({comments.length})</h2>
+        <button
+          onClick={handleSortToggle}
+          disabled={loading}
+          className="flex items-center px-3 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed rounded-lg transition-colors text-sm font-medium"
+          title={`Sort comments ${
+            sortOrder === "DESC" ? "oldest first" : "newest first"
+          }`}
+        >
+          {sortOrder === "DESC" ? (
+            <>
+              <FaSortAmountDown className="mr-2" />
+              Newest First
+            </>
+          ) : (
+            <>
+              <FaSortAmountUp className="mr-2" />
+              Oldest First
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Add Comment Form */}
       {currentUser ? (
