@@ -62,14 +62,6 @@ const HeroSection: React.FC = () => {
     }
   };
 
-  const formatDuration = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
-  };
   return (
     <section className="container mx-auto px-4 py-16 md:py-28 flex flex-col md:flex-row items-center">
       <div className="md:w-1/2 mb-12 md:mb-0">
@@ -144,11 +136,6 @@ const HeroSection: React.FC = () => {
               </h3>
               <div className="flex justify-center space-x-2 mb-3">
                 <span className="bg-red-600 px-2 py-1 rounded text-sm">HD</span>
-                {!loading && featuredMovie?.duration && (
-                  <span className="bg-gray-700 px-2 py-1 rounded text-sm">
-                    {formatDuration(featuredMovie.duration)}
-                  </span>
-                )}
                 {!loading &&
                   featuredMovie?.genres &&
                   featuredMovie.genres.length > 0 && (
