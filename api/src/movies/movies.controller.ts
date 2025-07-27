@@ -114,13 +114,11 @@ export class MoviesController {
   async getPopularMovies(
     @Req() req: Request,
     @Query('page') page: number = 1,
-    @Query('sortBy') sort: 'title' | 'year' | 'rating' = 'rating',
+    @Query('sortBy')
+    sort: 'title' | 'year' | 'rating' | 'like_count' = 'like_count',
     @Query('genre') genre: string,
   ): Promise<MoviesSearchResponse> {
     const user = req['user'];
-    if (!sort || sort.length === 0) {
-      sort = 'rating';
-    }
     return await this.moviesService.search(user['id'], '', page, sort, genre);
   }
 

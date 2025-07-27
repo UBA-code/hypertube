@@ -73,7 +73,7 @@ export class MoviesService {
     userId: number,
     query: string,
     page: number,
-    sort: 'title' | 'year' | 'rating' | 'seeds' | 'genre',
+    sort: 'title' | 'year' | 'rating' | 'seeds' | 'genre' | 'like_count',
   ): Promise<MoviesSearchResponse> {
     const user = await this.usersService.findOne({
       where: { id: userId },
@@ -210,7 +210,7 @@ export class MoviesService {
     userId: number,
     query: string,
     page: number,
-    sort: 'title' | 'year' | 'rating',
+    sort: 'title' | 'year' | 'rating' | 'like_count',
     filterByYear?: string,
     filterByGenre?: string,
     filterByRating?: number,
@@ -304,9 +304,11 @@ export class MoviesService {
       try {
         searchResult = await this.getTmdbMovieDetails(userId, imdbId);
         if (!searchResult.imdbId)
-          throw new BadRequestException('Movie not found on TMDB');
+          throw new BadRequestException(
+            'Movie not found on either TMDB or OMDB',
+          );
       } catch {
-        throw new BadRequestException('Movie not found on TMDB');
+        throw new BadRequestException('Movie not found on either TMDB or OMDB');
       }
     }
 
@@ -315,7 +317,7 @@ export class MoviesService {
 
   async getTmdbMovieDetails(
     userId: number,
-    imdbId: string,
+    movieId: string,
     withTorrents: boolean = false,
   ): Promise<MovieDto> {
     const user = await this.usersService.findOne({
@@ -325,7 +327,7 @@ export class MoviesService {
     try {
       const tmdbSearchResult = (
         await axios.get<TMDBMovieDetails>(
-          `https://api.themoviedb.org/3/movie/${imdbId}`,
+          `https://api.themoviedb.org/3/movie/${movieId}`,
           {
             params: {
               api_key: process.env.TMDB_API_KEY,
@@ -334,6 +336,25 @@ export class MoviesService {
           },
         )
       ).data;
+      if (!tmdbSearchResult.imdb_id) {
+        const OmdbSearchResult = (
+          await axios.get(`https://www.omdbapi.com/`, {
+            params: {
+              apikey: process.env.OMDB_API_KEY,
+              t: tmdbSearchResult.title,
+              y: tmdbSearchResult.release_date.split('-')[0],
+            },
+          })
+        ).data;
+        if (OmdbSearchResult.Response === 'False') {
+          throw new NotFoundException('Movie not found on either TMDB or OMDB');
+        } else {
+          console.log('='.repeat(50));
+          console.log(`Found movie on OMDB: ${OmdbSearchResult.Title}`);
+          console.log('='.repeat(50));
+          tmdbSearchResult.imdb_id = OmdbSearchResult.imdbID;
+        }
+      }
       return {
         imdbId: tmdbSearchResult.imdb_id,
         title: tmdbSearchResult.title,
@@ -366,7 +387,7 @@ export class MoviesService {
       };
     } catch (error) {
       console.error('Error fetching TMDB movie details:', error);
-      throw new Error('Movie not found on TMDB');
+      throw new BadRequestException('Movie not found on either TMDB or OMDB');
     }
   }
 
