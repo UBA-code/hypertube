@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { MdDownload } from "react-icons/md";
 import { RiMovie2Line } from "react-icons/ri";
+import { DashboardTopBar } from "../components";
 
 interface Movie {
   imdbId: string;
@@ -159,6 +160,11 @@ const SearchResults: React.FC = () => {
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    userName: string;
+    firstName?: string;
+    profilePicture?: string;
+  } | null>(null);
 
   // Check if user is authenticated
   useEffect(() => {
@@ -176,6 +182,9 @@ const SearchResults: React.FC = () => {
           navigate("/login");
           return;
         }
+
+        const userData = await response.json();
+        setCurrentUser(userData);
       } catch {
         navigate("/login");
         return;
@@ -308,29 +317,27 @@ const SearchResults: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
       <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="mr-4 p-2 rounded-full hover:bg-gray-800 transition"
-          >
-            <FaArrowLeft className="text-xl" />
-          </button>
-          <div className="flex items-center">
-            <FaPlay className="text-red-600 text-2xl mr-2" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-purple-600 bg-clip-text text-transparent">
-              Hypertube
-            </h1>
-          </div>
-        </div>
+        {/* Top Bar */}
+        <DashboardTopBar
+          currentUser={currentUser}
+          showMobileMenu={false}
+          searchDefaultValue={query}
+          showNotification={false}
+        />
 
         {/* Search Info */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">
-            Search Results for "{query}"
-          </h2>
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="mr-4 p-2 rounded-full hover:bg-gray-800 transition"
+            >
+              <FaArrowLeft className="text-xl" />
+            </button>
+            <h2 className="text-2xl font-bold">Search Results for "{query}"</h2>
+          </div>
           {totalResults > 0 && (
-            <p className="text-gray-400">
+            <p className="text-gray-400 ml-14">
               Found {totalResults} result{totalResults !== 1 ? "s" : ""}
             </p>
           )}

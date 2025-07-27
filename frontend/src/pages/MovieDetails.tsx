@@ -9,6 +9,7 @@ import {
   FaStar,
 } from "react-icons/fa";
 import { MdAccessTime, MdDateRange } from "react-icons/md";
+import { CommentsSection, DashboardTopBar } from "../components";
 
 interface Movie {
   imdbId: string;
@@ -53,6 +54,40 @@ const MovieDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+    id: number;
+    username: string;
+    userName: string;
+    firstName?: string;
+    profilePicture?: string;
+  } | null>(null);
+
+  // Check if user is authenticated and get user data
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+        }
+        // If not authenticated, currentUser stays null but we don't redirect
+        // Users can still view movie details without being logged in
+      } catch (error) {
+        console.error("Error checking auth status:", error);
+        // If there's an error, currentUser stays null
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
 
   // Function to get rating color based on IMDB score (0.0 = red, 10.0 = green)
   const getRatingColor = (rating: number): string => {
@@ -182,6 +217,15 @@ const MovieDetails: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      {/* Top Bar */}
+      <div className="bg-gray-900 px-4 md:px-6 py-4">
+        <DashboardTopBar
+          currentUser={currentUser}
+          showMobileMenu={false}
+          showNotification={false}
+        />
+      </div>
+
       {/* Hero Section with Background */}
       <div
         className="relative h-96 bg-cover bg-center"
@@ -346,6 +390,14 @@ const MovieDetails: React.FC = () => {
                 </p>
               </div>
             </div>
+
+            {/* Comments Section */}
+            {movie.imdbId && (
+              <CommentsSection
+                movieImdbId={movie.imdbId}
+                currentUser={currentUser}
+              />
+            )}
           </div>
         </div>
       </div>
