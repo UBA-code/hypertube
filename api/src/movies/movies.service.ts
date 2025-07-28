@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Movie from './entities/movie.entity';
-import { Like, Repository } from 'typeorm';
+import { FindOneOptions, Like, Repository } from 'typeorm';
 import { UsersService } from 'src/users/users.service';
 import {
   YtsDetailedMovie,
@@ -36,6 +36,10 @@ export class MoviesService {
     return await this.movieRepository.save(movie);
   }
 
+  async save(movie: Movie): Promise<Movie> {
+    return await this.movieRepository.save(movie);
+  }
+
   async findAllMovies(): Promise<Movie[]> {
     return await this.movieRepository.find();
   }
@@ -44,8 +48,8 @@ export class MoviesService {
     return await this.movieRepository.findOneBy({ id });
   }
 
-  async findMovieByImdbId(imdbId: string): Promise<Movie> {
-    return await this.movieRepository.findOneBy({ imdbId });
+  async findMovieBy(options: FindOneOptions<Movie>): Promise<Movie> {
+    return await this.movieRepository.findOne(options);
   }
 
   async findMoviesByTitle(title: string): Promise<Movie[]> {
@@ -305,20 +309,16 @@ export class MoviesService {
         try {
           searchResult = await this.getTmdbMovieDetails(userId, imdbId); //! try TMDB if YTS fails
         } catch {
-          throw new BadRequestException(
-            'Movie not found on either YTS or TMDB',
-          );
+          throw new NotFoundException('Movie not found on either YTS or TMDB');
         }
       }
     } else {
       try {
         searchResult = await this.getTmdbMovieDetails(userId, imdbId);
         if (!searchResult.imdbId)
-          throw new BadRequestException(
-            'Movie not found on either TMDB or OMDB',
-          );
+          throw new NotFoundException('Movie not found on either TMDB or OMDB');
       } catch {
-        throw new BadRequestException('Movie not found on either TMDB or OMDB');
+        throw new NotFoundException('Movie not found on either TMDB or OMDB');
       }
     }
 
@@ -397,7 +397,7 @@ export class MoviesService {
       };
     } catch (error) {
       console.error('Error fetching TMDB movie details:', error);
-      throw new BadRequestException('Movie not found on either TMDB or OMDB');
+      throw new NotFoundException('Movie not found on either TMDB or OMDB');
     }
   }
 
@@ -450,7 +450,7 @@ export class MoviesService {
       };
     } catch (error) {
       console.error('Error fetching YTS movie details:', error);
-      throw new Error('Movie not found on YTS');
+      throw new NotFoundException('Movie not found on YTS');
     }
   }
 

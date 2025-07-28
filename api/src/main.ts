@@ -20,7 +20,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
-  const uploadPath = join(__dirname, '..', 'uploads');
+  const uploadPath = join(process.cwd(), 'uploads');
   if (!existsSync(uploadPath)) {
     mkdirSync(uploadPath);
   }
