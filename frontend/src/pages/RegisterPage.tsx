@@ -1,13 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaPlay, FaArrowLeft } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
 import SocialAuthButtons from "../components/SocialAuthButtons";
+import Notification from "../components/Notification";
 
 const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for authentication
+        });
+
+        // If the response is successful (not 401), user is authenticated
+        if (response.ok) {
+          navigate("/dashboard");
+        }
+        // If 401, user is not authenticated, stay on registration page
+      } catch (error) {
+        console.log("Auth check failed:", error);
+        // If there's an error, assume user is not authenticated and stay on page
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigate]);
 
   const handleEmailRegister = async (userData: {
+    username: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -17,15 +50,62 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
     try {
       // TODO: Implement email registration logic
-      console.log("Email registration:", userData);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      alert(
-        "Registration successful! Please check your email to verify your account."
-      );
+      const x = {
+        userName: userData.username,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+      };
+      console.log("Email registration:", x);
+
+      const response = await fetch("http://localhost:3000/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+        body: JSON.stringify(x),
+      });
+
+      const responseData = await response.json();
+
+      if (response.status === 201 && responseData.success) {
+        // Success case
+        setNotification({
+          message:
+            responseData.message ||
+            "Registration successful! Redirecting to dashboard...",
+          type: "success",
+        });
+
+        // Navigate to dashboard after a short delay to show the success message
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        // Error case
+        let errorMessage = "Registration failed. Please try again.";
+
+        if (responseData.message) {
+          if (Array.isArray(responseData.message)) {
+            errorMessage = responseData.message.join(", ");
+          } else {
+            errorMessage = responseData.message;
+          }
+        }
+
+        setNotification({
+          message: errorMessage,
+          type: "error",
+        });
+      }
     } catch (error) {
       console.error("Registration failed:", error);
-      alert("Registration failed. Please try again.");
+      setNotification({
+        message: "Network error. Please check your connection and try again.",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -36,7 +116,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement GitHub OAuth
       console.log("GitHub OAuth initiated");
-      window.location.href = "/auth/github";
+      window.location.href = "http://localhost:3000/auth/github";
     } catch (error) {
       console.error("GitHub auth failed:", error);
       setIsLoading(false);
@@ -48,7 +128,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement Google OAuth
       console.log("Google OAuth initiated");
-      window.location.href = "/auth/google";
+      window.location.href = "http://localhost:3000/auth/google";
     } catch (error) {
       console.error("Google auth failed:", error);
       setIsLoading(false);
@@ -60,7 +140,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement 42 OAuth
       console.log("42 OAuth initiated");
-      window.location.href = "/auth/42";
+      window.location.href = "http://localhost:3000/auth/42";
     } catch (error) {
       console.error("42 auth failed:", error);
       setIsLoading(false);
@@ -143,6 +223,15 @@ const RegisterPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };

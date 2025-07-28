@@ -214,13 +214,30 @@ const mockMovies = [
 ];
 
 // API functions that return promises with mock data
-export const getPopularMovies = () => {
-  return new Promise((resolve) => {
-    // Simulate network delay
-    setTimeout(() => {
-      resolve([...mockMovies]);
-    }, 1500);
-  });
+export const getPopularMovies = async (page = 1) => {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/movies/popular?page=${page}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch popular movies: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data; // Return the full response with movies and totalResults
+  } catch (error) {
+    console.error("Error fetching popular movies:", error);
+    // Return empty response on error to prevent crashes
+    return { movies: [], totalResults: 0 };
+  }
 };
 
 export const getWatchedMovies = () => {
@@ -239,4 +256,32 @@ export const getCurrentUser = () => {
       resolve({ ...mockUser });
     }, 1000);
   });
+};
+
+// Search movies function - you can replace this with real API call
+export const searchMovies = async (query, page = 1) => {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/movies/search?query=${encodeURIComponent(
+        query
+      )}&page=${page}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Search error:", error);
+    throw error;
+  }
 };

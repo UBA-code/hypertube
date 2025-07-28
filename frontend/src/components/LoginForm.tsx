@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { FaEye, FaEyeSlash, FaEnvelope, FaLock } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaUser, FaLock } from "react-icons/fa";
 
 interface LoginFormProps {
-  onSubmit: (email: string, password: string) => void;
+  onSubmit: (username: string, password: string) => void;
   isLoading?: boolean;
 }
 
@@ -10,20 +10,21 @@ const LoginForm: React.FC<LoginFormProps> = ({
   onSubmit,
   isLoading = false,
 }) => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
-    {}
-  );
+  const [errors, setErrors] = useState<{
+    username?: string;
+    password?: string;
+  }>({});
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { username?: string; password?: string } = {};
 
-    if (!email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email";
+    if (!username) {
+      newErrors.username = "Username is required";
+    } else if (username.length < 3) {
+      newErrors.username = "Username must be at least 3 characters";
     }
 
     if (!password) {
@@ -39,32 +40,32 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(email, password);
+      onSubmit(username, password);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-2">
-          Email Address
+        <label htmlFor="username" className="block text-sm font-medium mb-2">
+          Username
         </label>
         <div className="relative">
-          <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className={`w-full pl-10 pr-4 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-              errors.email ? "border-red-500" : "border-gray-700"
+              errors.username ? "border-red-500" : "border-gray-700"
             }`}
-            placeholder="Enter your email"
+            placeholder="Enter your username"
             disabled={isLoading}
           />
         </div>
-        {errors.email && (
-          <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+        {errors.username && (
+          <p className="text-red-500 text-sm mt-1">{errors.username}</p>
         )}
       </div>
 

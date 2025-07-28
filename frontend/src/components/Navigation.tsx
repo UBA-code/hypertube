@@ -11,6 +11,15 @@ const Navigation: React.FC<NavigationProps> = ({
   isMenuOpen,
   setIsMenuOpen,
 }) => {
+  const handleSmoothScroll = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+    // Close mobile menu if open
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
       {/* Navigation */}
@@ -23,18 +32,24 @@ const Navigation: React.FC<NavigationProps> = ({
         </Link>
 
         <div className="hidden md:flex space-x-8">
-          <a href="#features" className="hover:text-red-500 transition">
+          <button
+            onClick={() => handleSmoothScroll("features")}
+            className="hover:text-red-500 transition"
+          >
             Features
-          </a>
-          <a href="#how-it-works" className="hover:text-red-500 transition">
+          </button>
+          <button
+            onClick={() => handleSmoothScroll("how-it-works")}
+            className="hover:text-red-500 transition"
+          >
             How It Works
-          </a>
-          <a href="#testimonials" className="hover:text-red-500 transition">
+          </button>
+          <button
+            onClick={() => handleSmoothScroll("testimonials")}
+            className="hover:text-red-500 transition"
+          >
             Testimonials
-          </a>
-          <a href="#faq" className="hover:text-red-500 transition">
-            FAQ
-          </a>
+          </button>
         </div>
 
         <div className="hidden md:flex space-x-4">
@@ -64,18 +79,24 @@ const Navigation: React.FC<NavigationProps> = ({
       {isMenuOpen && (
         <div className="md:hidden bg-gray-800 p-4 absolute w-full z-10">
           <div className="flex flex-col space-y-4">
-            <a href="#features" className="hover:text-red-500 transition">
+            <button
+              onClick={() => handleSmoothScroll("features")}
+              className="hover:text-red-500 transition text-left"
+            >
               Features
-            </a>
-            <a href="#how-it-works" className="hover:text-red-500 transition">
+            </button>
+            <button
+              onClick={() => handleSmoothScroll("how-it-works")}
+              className="hover:text-red-500 transition text-left"
+            >
               How It Works
-            </a>
-            <a href="#testimonials" className="hover:text-red-500 transition">
+            </button>
+            <button
+              onClick={() => handleSmoothScroll("testimonials")}
+              className="hover:text-red-500 transition text-left"
+            >
               Testimonials
-            </a>
-            <a href="#faq" className="hover:text-red-500 transition">
-              FAQ
-            </a>
+            </button>
             <div className="flex space-x-4 pt-4">
               <Link
                 to="/login"
