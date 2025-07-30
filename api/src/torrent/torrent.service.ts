@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { join } from 'path';
 import Movie from 'src/movies/entities/movie.entity';
 import { MoviesService } from 'src/movies/movies.service';
@@ -7,6 +11,7 @@ import streamResponseDto from './dto/stream-response.dto';
 
 @Injectable()
 export class TorrentService {
+  private readonly engines: Map<string, torrentStream.Engine> = new Map();
   constructor(private moviesService: MoviesService) {}
 
   async getTorrentStream(
@@ -59,6 +64,7 @@ export class TorrentService {
       });
 
       engine.on('ready', async () => {
+        this.engines.set(movie.imdbId, engine);
         engine.files.forEach((file) => file.deselect());
         const desiredFile = engine.files.find((file) =>
           /\.(mp4|mkv|avi|mov|wmv|flv|webm|mpg|mpeg|m4v|3gp|3g2|ts|vob|ogv|rm|rmvb|asf|f4v)$/i.test(
@@ -98,6 +104,7 @@ export class TorrentService {
         });
       });
       engine.on('error', (err) => {
+        this.engines.delete(movie.imdbId);
         console.error(`Error in torrent engine: ${err.message}`);
         reject({
           success: false,
@@ -105,5 +112,49 @@ export class TorrentService {
         });
       });
     });
+  }
+
+  async getEngine(imdbId: string): Promise<torrentStream.Engine | null> {
+    return this.engines.get(imdbId) || null;
+  }
+
+  async getAvailableRanges(
+    imdbId: string,
+  ): Promise<{ start: number; end: number }[]> {
+    const engine = await this.getEngine(imdbId);
+    if (!engine) {
+      throw new BadRequestException(
+        'Torrent engine not found for the given IMDB ID',
+      );
+    }
+    const file = engine.files[0];
+    const pieceLength = engine.torrent.pieceLength;
+    const startPiece = (file.offset / pieceLength) | 0;
+    const endPiece = ((file.offset + file.length - 1) / pieceLength) | 0;
+    const availableRanges = [];
+    let start = null;
+
+    for (let i = startPiece; i <= endPiece; i++) {
+      if (engine.bitfield.get(i)) {
+        if (start === null) start = i * pieceLength; //? if start not found yet, set it
+      } else if (start !== null) {
+        //? if start is found and current piece is not available, set the end
+        availableRanges.push({
+          start: start,
+          end: i * pieceLength - 1,
+        });
+        start = null;
+      }
+    }
+
+    if (start !== null) {
+      availableRanges.push({
+        start: start,
+        end: Math.min((endPiece + 1) * pieceLength, file.length) - 1,
+      });
+    }
+
+    console.log('Available ranges:', availableRanges);
+    return availableRanges;
   }
 }

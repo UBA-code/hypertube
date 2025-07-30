@@ -359,9 +359,6 @@ export class MoviesService {
         if (OmdbSearchResult.Response === 'False') {
           throw new NotFoundException('Movie not found on either TMDB or OMDB');
         } else {
-          console.log('='.repeat(50));
-          console.log(`Found movie on OMDB: ${OmdbSearchResult.Title}`);
-          console.log('='.repeat(50));
           tmdbSearchResult.imdb_id = OmdbSearchResult.imdbID;
         }
       }

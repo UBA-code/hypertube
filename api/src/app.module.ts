@@ -48,16 +48,10 @@ import Producer from './movies/entities/Producer.entity';
     }),
     AuthModule,
     UsersModule,
-    ServeStaticModule.forRoot(
-      {
-        rootPath: join(process.cwd(), 'uploads'),
-        serveRoot: '/uploads',
-      },
-      {
-        rootPath: join(process.cwd(), 'torrents'),
-        serveRoot: '/torrents',
-      },
-    ),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
     MoviesModule,
     RevokedTokensModule,
     CommentsModule,
