@@ -332,6 +332,15 @@ export class MoviesService {
       }
     }
 
+    const exist = await this.movieRepository.findOne({
+      where: { imdbId: searchResult.imdbId },
+      relations: ['genres', 'actors', 'directors', 'producers', 'torrents'],
+    });
+
+    if (exist) {
+      return exist;
+    }
+
     return await this.saveMovie(searchResult);
   }
 

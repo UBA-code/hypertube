@@ -10,6 +10,7 @@ import * as torrentStream from 'torrent-stream';
 import streamResponseDto from './dto/stream-response.dto';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
+import { scrapTorrentLinks } from './helpers/scrapTorrentLinks';
 @Injectable()
 export class TorrentService {
   private readonly engines: Map<string, torrentStream.Engine> = new Map();
@@ -26,7 +27,11 @@ export class TorrentService {
 
     if (!movie) {
       throw new NotFoundException('Movie not found');
+    } else if (!movie.torrents || !movie.torrents.length) {
+      movie.torrents = await scrapTorrentLinks(movie.title, movie.year);
+      if (movie.title.length) await this.moviesService.save(movie);
     }
+
     return await this.downloadTorrent(movie, quality);
   }
 
