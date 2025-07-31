@@ -52,6 +52,16 @@ export class MoviesService {
     return await this.movieRepository.findOne(options);
   }
 
+  async findMovieByImdbId(
+    imdbId: string,
+    relations?: string[],
+  ): Promise<Movie> {
+    return await this.movieRepository.findOne({
+      where: { imdbId },
+      relations,
+    });
+  }
+
   async findMoviesByTitle(title: string): Promise<Movie[]> {
     return await this.movieRepository.find({
       where: { title },

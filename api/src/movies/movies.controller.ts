@@ -13,6 +13,7 @@ import { MoviesService } from './movies.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
 import { Request } from 'express';
+import { scrapAndSaveSubtitles } from './helpers/scrapSubtitles';
 
 @Controller('movies')
 export class MoviesController {
@@ -177,5 +178,26 @@ export class MoviesController {
   @Get('/library/favorites')
   async getFavoritesMovies(@Req() req: Request) {
     return await this.moviesService.getFavoritesMovies(req['user']['id']);
+  }
+
+  @Get('subtitles/:imdbId')
+  async testSub(@Param('imdbId') imdbId: string) {
+    const movie = await this.moviesService.findMovieBy({
+      where: { imdbId },
+      relations: ['subtitles'],
+    });
+    if (!movie) {
+      throw new BadRequestException(
+        'Movie not found with the provided IMDB ID',
+      );
+      // return await scrapAndSaveSubtitles(imdbId);
+    } else if (movie.subtitles && movie.subtitles.length > 0) {
+      return movie.subtitles;
+    } else if (movie.subtitles && movie.subtitles.length === 0) {
+      const subs = await scrapAndSaveSubtitles(imdbId);
+      movie.subtitles = subs;
+      await this.moviesService.save(movie);
+      return subs;
+    }
   }
 }
