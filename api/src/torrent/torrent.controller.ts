@@ -9,8 +9,6 @@ import {
 } from '@nestjs/common';
 import { TorrentService } from './torrent.service';
 import streamResponseDto from './dto/stream-response.dto';
-import { join } from 'path';
-import * as fs from 'fs';
 import { Request, Response } from 'express';
 
 @Controller('torrent')
@@ -38,31 +36,7 @@ export class TorrentController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    const filePath = join(process.cwd(), 'torrents', decodeURIComponent(path));
-    const stat = await fs.promises.stat(filePath);
-    const fileSize = stat.size;
-    const range = req.headers.range;
-
-    if (!range) {
-      res.status(416).send('Range header is required');
-      return;
-    } else {
-      const parts = range.replace(/bytes=/, '').split('-');
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      if (start >= fileSize || end >= fileSize || start > end) {
-        res.status(416).send('Requested range not satisfiable');
-        return;
-      }
-      res.writeHead(206, {
-        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-        'Accept-Ranges': 'bytes',
-        'Content-Length': end - start + 1,
-        'Content-Type': 'application/octet-stream',
-      });
-      const file = fs.createReadStream(filePath, { start, end });
-      file.pipe(res);
-    }
+    return await this.torrentService.getStreamByPath(path, req, res);
   }
 
   @Get('availableRange')

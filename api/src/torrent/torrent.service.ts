@@ -8,7 +8,8 @@ import Movie from 'src/movies/entities/movie.entity';
 import { MoviesService } from 'src/movies/movies.service';
 import * as torrentStream from 'torrent-stream';
 import streamResponseDto from './dto/stream-response.dto';
-
+import { Request, Response } from 'express';
+import * as fs from 'fs';
 @Injectable()
 export class TorrentService {
   private readonly engines: Map<string, torrentStream.Engine> = new Map();
@@ -112,6 +113,44 @@ export class TorrentService {
         });
       });
     });
+  }
+
+  async getStreamByPath(
+    path: string,
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    const filePath = join(process.cwd(), 'torrents', decodeURIComponent(path));
+    const stat = await fs.promises.stat(filePath);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+    const availableRanges = await this.getAvailableRanges(path);
+
+    if (!range) {
+      res.status(416).send('Range header is required');
+      return;
+    } else {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      if (start >= fileSize || end >= fileSize || start > end) {
+        res.status(416).send('Requested range not satisfiable');
+        return;
+      } else if (
+        availableRanges.some((r) => start >= r.start && end <= r.end)
+      ) {
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': end - start + 1,
+          'Content-Type': 'application/octet-stream',
+        });
+        const file = fs.createReadStream(filePath, { start, end });
+        file.pipe(res);
+      } else {
+        res.status(416).send('Requested range not available');
+      }
+    }
   }
 
   async getEngine(imdbId: string): Promise<torrentStream.Engine | null> {
