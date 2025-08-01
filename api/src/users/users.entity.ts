@@ -44,8 +44,11 @@ export class User {
   @JoinTable()
   watchedMovies: Movie[];
 
-  @Column()
-  authType: 'local' | '42' | 'google' | 'github';
+  @Column({
+    enum: ['local', '42', 'google', 'github', 'gitlab'],
+    default: 'local',
+  })
+  authType: 'local' | '42' | 'google' | 'github' | 'gitlab';
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
