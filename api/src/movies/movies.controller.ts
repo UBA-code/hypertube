@@ -8,12 +8,12 @@ import {
   Post,
   Query,
   Req,
+  Res,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
-import { Request } from 'express';
-import { scrapAndSaveSubtitles } from './helpers/scrapSubtitles';
+import { Request, Response } from 'express';
 
 @Controller('movies')
 export class MoviesController {
@@ -180,24 +180,17 @@ export class MoviesController {
     return await this.moviesService.getFavoritesMovies(req['user']['id']);
   }
 
+  @Get('subtitles/:imdbId/:language')
+  async testSub(
+    @Param('imdbId') imdbId: string,
+    @Param('language') language: string,
+    @Res() res: Response,
+  ) {
+    return await this.moviesService.getSubtitles(imdbId, language, res);
+  }
+
   @Get('subtitles/:imdbId')
-  async testSub(@Param('imdbId') imdbId: string) {
-    const movie = await this.moviesService.findMovieBy({
-      where: { imdbId },
-      relations: ['subtitles'],
-    });
-    if (!movie) {
-      throw new BadRequestException(
-        'Movie not found with the provided IMDB ID',
-      );
-      // return await scrapAndSaveSubtitles(imdbId);
-    } else if (movie.subtitles && movie.subtitles.length > 0) {
-      return movie.subtitles;
-    } else if (movie.subtitles && movie.subtitles.length === 0) {
-      const subs = await scrapAndSaveSubtitles(imdbId);
-      movie.subtitles = subs;
-      await this.moviesService.save(movie);
-      return subs;
-    }
+  async getAvailableSubtitles(@Param('imdbId') imdbId: string) {
+    return await this.moviesService.getAllAvailableSubtitles(imdbId);
   }
 }

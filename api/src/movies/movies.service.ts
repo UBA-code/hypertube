@@ -20,6 +20,12 @@ import Genre from './entities/genre.entity';
 import { tmdbGenres } from './constants/tmdbGenres';
 import { TmdbSearchResponse } from './types/TmdbSearchResponse';
 import { TMDBMovieDetails } from './types/tmdbMovieDetails';
+import { Response } from 'express';
+import { scrapAndSaveSubtitles } from './helpers/scrapSubtitles';
+import * as fs from 'fs';
+import { join } from 'path';
+import SubtitleDto from './dto/subtitles.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class MoviesService {
@@ -631,5 +637,45 @@ export class MoviesService {
     });
 
     return user.favoriteMovies;
+  }
+
+  async getSubtitles(imdbId: string, language: string, res: Response) {
+    const movie = await this.movieRepository.findOne({
+      where: { imdbId },
+      relations: ['subtitles'],
+    });
+    if (!movie) {
+      throw new NotFoundException('Movie not found with the provided IMDB ID');
+    } else if (movie.subtitles && movie.subtitles.length > 0) {
+      const sub = movie.subtitles.find(
+        (sub) => sub.language.toLowerCase() === language.toLowerCase(),
+      );
+      if (!sub) {
+        throw new NotFoundException(
+          `No subtitles found for language: ${language}`,
+        );
+      }
+      const filePath = sub.url;
+      const fileStream = fs.createReadStream(join(process.cwd(), filePath));
+      res.setHeader('Content-Type', 'text/vtt');
+
+      return fileStream.pipe(res);
+    } else if (movie.subtitles && movie.subtitles.length === 0) {
+      const subs = await scrapAndSaveSubtitles(imdbId);
+      movie.subtitles = subs;
+      await this.movieRepository.save(movie);
+      return subs;
+    }
+  }
+
+  async getAllAvailableSubtitles(imdbId: string): Promise<SubtitleDto[]> {
+    const movie = await this.movieRepository.findOne({
+      where: { imdbId },
+      relations: ['subtitles'],
+    });
+    if (!movie) {
+      throw new NotFoundException('Movie not found with the provided IMDB ID');
+    }
+    return plainToInstance(SubtitleDto, movie.subtitles);
   }
 }
