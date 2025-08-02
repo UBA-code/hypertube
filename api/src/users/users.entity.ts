@@ -45,10 +45,10 @@ export class User {
   watchedMovies: Movie[];
 
   @Column({
-    enum: ['local', '42', 'google', 'github', 'gitlab'],
+    enum: ['local', '42', 'google', 'github', 'gitlab', 'discord'],
     default: 'local',
   })
-  authType: 'local' | '42' | 'google' | 'github' | 'gitlab';
+  authType: 'local' | '42' | 'google' | 'github' | 'gitlab' | 'discord';
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

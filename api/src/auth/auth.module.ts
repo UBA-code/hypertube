@@ -14,6 +14,7 @@ import { GithubStrategy } from './strategies/github.strategy';
 import { MailsModule } from 'src/mails/mails.module';
 import { RevokedTokensModule } from 'src/revoked-tokens/revoked-tokens.module';
 import { GitlabStrategy } from './strategies/gitlab.strategy';
+import { DiscordStrategy } from './strategies/discord.strategy';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { GitlabStrategy } from './strategies/gitlab.strategy';
     GoogleAuthStrategy,
     GithubStrategy,
     GitlabStrategy,
+    DiscordStrategy,
     {
       provide: APP_GUARD,
       useClass: JwtGuard,

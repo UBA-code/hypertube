@@ -36,6 +36,7 @@ import {
 
 import { RevokedTokensService } from 'src/revoked-tokens/revoked-tokens.service';
 import { GitlabGuard } from './guards/gitlab.guard';
+import { DiscordGuard } from './guards/discord.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -258,6 +259,24 @@ export class AuthController {
   @SkipAuth()
   @UseGuards(GitlabGuard)
   async gitlabAuthCallback(@Req() req: Request, @Res() res: Response) {
+    res.cookie('accessToken', req['user']['accessToken'], {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    });
+
+    return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+  }
+
+  @Get('discord')
+  @SkipAuth()
+  @UseGuards(DiscordGuard)
+  async discordAuth() {}
+
+  @Get('discord/redirect')
+  @SkipAuth()
+  @UseGuards(DiscordGuard)
+  async discordAuthCallback(@Req() req: Request, @Res() res: Response) {
     res.cookie('accessToken', req['user']['accessToken'], {
       httpOnly: true,
       sameSite: 'strict',
