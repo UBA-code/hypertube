@@ -143,7 +143,7 @@ const VideoPlayer: React.FC = () => {
     return null;
   }
 
-  const fullStreamUrl = `http://localhost:3000/torrent/stream/${decodeURIComponent(
+  const fullStreamUrl = `http://localhost:3000/torrent/stream?path=${decodeURIComponent(
     streamUrl
   )}`;
 

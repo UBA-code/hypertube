@@ -59,6 +59,7 @@ const MovieDetails: React.FC = () => {
   const [showQualityPopup, setShowQualityPopup] = useState(false);
   const [availableQualities, setAvailableQualities] = useState<string[]>([]);
   const [loadingQualities, setLoadingQualities] = useState(false);
+  const [qualitiesError, setQualitiesError] = useState<string | null>(null);
   const [streamingQuality, setStreamingQuality] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentUser, setCurrentUser] = useState<{
@@ -157,6 +158,7 @@ const MovieDetails: React.FC = () => {
 
     try {
       setLoadingQualities(true);
+      setQualitiesError(null);
       const response = await fetch(
         `http://localhost:3000/torrent/availableQualities/${movie.imdbId}`,
         {
@@ -169,15 +171,29 @@ const MovieDetails: React.FC = () => {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch qualities: ${response.statusText}`);
+        // Try to get the error message from the response
+        try {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message ||
+              `Failed to fetch qualities: ${response.statusText}`
+          );
+        } catch {
+          throw new Error(`Failed to fetch qualities: ${response.statusText}`);
+        }
       }
 
       const qualities: string[] = await response.json();
       setAvailableQualities(qualities);
       setShowQualityPopup(true);
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred while fetching available qualities";
+      setQualitiesError(errorMessage);
+      setShowQualityPopup(true); // Still show popup to display the error
       console.error("Error fetching available qualities:", error);
-      // You could show an error message to the user here
     } finally {
       setLoadingQualities(false);
     }
@@ -224,6 +240,7 @@ const MovieDetails: React.FC = () => {
       setIsStreaming(false);
       setStreamingQuality(null);
       setShowQualityPopup(false);
+      setQualitiesError(null);
     }
   };
 
@@ -544,7 +561,10 @@ const MovieDetails: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-white">Select Quality</h3>
               <button
-                onClick={() => setShowQualityPopup(false)}
+                onClick={() => {
+                  setShowQualityPopup(false);
+                  setQualitiesError(null);
+                }}
                 className="text-gray-400 hover:text-white transition"
               >
                 ✕
@@ -552,31 +572,35 @@ const MovieDetails: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {availableQualities.map((quality) => (
-                <button
-                  key={quality}
-                  onClick={() => startStreaming(quality)}
-                  disabled={isStreaming && streamingQuality === quality}
-                  className="w-full flex items-center justify-between p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="flex items-center">
-                    <FaPlay className="mr-3 text-red-500" />
-                    <span className="text-white font-medium">{quality}</span>
-                  </div>
-                  {isStreaming && streamingQuality === quality && (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
-                  )}
-                </button>
-              ))}
+              {qualitiesError ? (
+                <div className="bg-red-900 border border-red-700 rounded-lg p-4">
+                  <p className="text-red-300 text-sm">{qualitiesError}</p>
+                </div>
+              ) : availableQualities.length > 0 ? (
+                availableQualities.map((quality) => (
+                  <button
+                    key={quality}
+                    onClick={() => startStreaming(quality)}
+                    disabled={isStreaming && streamingQuality === quality}
+                    className="w-full flex items-center justify-between p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center">
+                      <FaPlay className="mr-3 text-red-500" />
+                      <span className="text-white font-medium">{quality}</span>
+                    </div>
+                    {isStreaming && streamingQuality === quality && (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                    )}
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-400">
+                    No qualities available for this movie
+                  </p>
+                </div>
+              )}
             </div>
-
-            {availableQualities.length === 0 && (
-              <div className="text-center py-4">
-                <p className="text-gray-400">
-                  No qualities available for this movie
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
