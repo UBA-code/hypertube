@@ -39,6 +39,16 @@ export class TorrentController {
     return await this.torrentService.getStreamByPath(path, req, res);
   }
 
+  @Get('availableQualities/:imdbId')
+  async getAvailableQualities(
+    @Param('imdbId') imdbId: string,
+  ): Promise<string[]> {
+    if (!imdbId) {
+      throw new BadRequestException('IMDB ID is required');
+    }
+    return await this.torrentService.getAvailableQualities(imdbId);
+  }
+
   @Get('availableRange')
   async getAvailableRanges(
     @Query('path') path: string,
