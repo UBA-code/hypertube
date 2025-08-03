@@ -36,6 +36,7 @@ export class TorrentController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
+    console.log(`Fetching stream for path: ${path}`);
     return await this.torrentService.getStreamByPath(path, req, res);
   }
 

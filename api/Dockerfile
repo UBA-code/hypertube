@@ -1,12 +1,12 @@
-FROM node:lts
+FROM node:alpine
 
 WORKDIR /app
 
 RUN npm install -g @nestjs/cli
 
-COPY package*.json ./
+COPY package*.json .
 
-RUN npm i
+RUN npm install
 
 COPY . .
 

@@ -43,7 +43,7 @@ import Producer from './movies/entities/Producer.entity';
         Subtitle,
       ],
       synchronize: true,
-      logging: true,
+      logging: false,
       autoLoadEntities: true,
     }),
     AuthModule,
