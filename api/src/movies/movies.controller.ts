@@ -8,11 +8,12 @@ import {
   Post,
   Query,
   Req,
+  Res,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 @Controller('movies')
 export class MoviesController {
@@ -114,13 +115,11 @@ export class MoviesController {
   async getPopularMovies(
     @Req() req: Request,
     @Query('page') page: number = 1,
-    @Query('sortBy') sort: 'title' | 'year' | 'rating' = 'rating',
+    @Query('sortBy')
+    sort: 'title' | 'year' | 'rating' | 'like_count' = 'like_count',
     @Query('genre') genre: string,
   ): Promise<MoviesSearchResponse> {
     const user = req['user'];
-    if (!sort || sort.length === 0) {
-      sort = 'rating';
-    }
     return await this.moviesService.search(user['id'], '', page, sort, genre);
   }
 
@@ -179,5 +178,19 @@ export class MoviesController {
   @Get('/library/favorites')
   async getFavoritesMovies(@Req() req: Request) {
     return await this.moviesService.getFavoritesMovies(req['user']['id']);
+  }
+
+  @Get('subtitles/:imdbId/:language')
+  async testSub(
+    @Param('imdbId') imdbId: string,
+    @Param('language') language: string,
+    @Res() res: Response,
+  ) {
+    return await this.moviesService.getSubtitles(imdbId, language, res);
+  }
+
+  @Get('subtitles/:imdbId')
+  async getAvailableSubtitles(@Param('imdbId') imdbId: string) {
+    return await this.moviesService.getAllAvailableSubtitles(imdbId);
   }
 }

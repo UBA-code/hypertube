@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Movie from './entities/movie.entity';
-import { Like, Repository } from 'typeorm';
+import { FindOneOptions, Like, Repository } from 'typeorm';
 import { UsersService } from 'src/users/users.service';
 import {
   YtsDetailedMovie,
@@ -20,6 +20,12 @@ import Genre from './entities/genre.entity';
 import { tmdbGenres } from './constants/tmdbGenres';
 import { TmdbSearchResponse } from './types/TmdbSearchResponse';
 import { TMDBMovieDetails } from './types/tmdbMovieDetails';
+import { Response } from 'express';
+import { scrapAndSaveSubtitles } from './helpers/scrapSubtitles';
+import * as fs from 'fs';
+import { join } from 'path';
+import SubtitleDto from './dto/subtitles.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class MoviesService {
@@ -36,6 +42,10 @@ export class MoviesService {
     return await this.movieRepository.save(movie);
   }
 
+  async save(movie: Movie): Promise<Movie> {
+    return await this.movieRepository.save(movie);
+  }
+
   async findAllMovies(): Promise<Movie[]> {
     return await this.movieRepository.find();
   }
@@ -44,8 +54,18 @@ export class MoviesService {
     return await this.movieRepository.findOneBy({ id });
   }
 
-  async findMovieByImdbId(imdbId: string): Promise<Movie> {
-    return await this.movieRepository.findOneBy({ imdbId });
+  async findMovieBy(options: FindOneOptions<Movie>): Promise<Movie> {
+    return await this.movieRepository.findOne(options);
+  }
+
+  async findMovieByImdbId(
+    imdbId: string,
+    relations?: string[],
+  ): Promise<Movie> {
+    return await this.movieRepository.findOne({
+      where: { imdbId },
+      relations,
+    });
   }
 
   async findMoviesByTitle(title: string): Promise<Movie[]> {
@@ -73,7 +93,7 @@ export class MoviesService {
     userId: number,
     query: string,
     page: number,
-    sort: 'title' | 'year' | 'rating' | 'seeds' | 'genre',
+    sort: 'title' | 'year' | 'rating' | 'seeds' | 'genre' | 'like_count',
   ): Promise<MoviesSearchResponse> {
     const user = await this.usersService.findOne({
       where: { id: userId },
@@ -210,11 +230,15 @@ export class MoviesService {
     userId: number,
     query: string,
     page: number,
-    sort: 'title' | 'year' | 'rating',
+    sort: 'title' | 'year' | 'rating' | 'like_count',
     filterByYear?: string,
     filterByGenre?: string,
     filterByRating?: number,
   ): Promise<MoviesSearchResponse> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['favoriteMovies'],
+    });
     const ytsSearchResult = await this.getYtsSearchResult(
       userId,
       query,
@@ -247,7 +271,13 @@ export class MoviesService {
           (movie.year === parseInt(filterByYear) || !filterByYear) &&
           (Math.floor(movie.imdbRating) === Math.floor(filterByRating) ||
             !filterByRating),
-      ); // filter by genre and year and rating if provided
+      )
+      .map((movie) => {
+        movie.isFavorite = user.favoriteMovies.some(
+          (favMovie) => favMovie.imdbId === movie.imdbId,
+        );
+        return movie;
+      });
 
     if (sort == 'title' || (query && query.length > 0)) {
       mergedMovies.sort((a, b) => a.title.localeCompare(b.title));
@@ -295,19 +325,26 @@ export class MoviesService {
         try {
           searchResult = await this.getTmdbMovieDetails(userId, imdbId); //! try TMDB if YTS fails
         } catch {
-          throw new BadRequestException(
-            'Movie not found on either YTS or TMDB',
-          );
+          throw new NotFoundException('Movie not found on either YTS or TMDB');
         }
       }
     } else {
       try {
         searchResult = await this.getTmdbMovieDetails(userId, imdbId);
         if (!searchResult.imdbId)
-          throw new BadRequestException('Movie not found on TMDB');
+          throw new NotFoundException('Movie not found on either TMDB or OMDB');
       } catch {
-        throw new BadRequestException('Movie not found on TMDB');
+        throw new NotFoundException('Movie not found on either TMDB or OMDB');
       }
+    }
+
+    const exist = await this.movieRepository.findOne({
+      where: { imdbId: searchResult.imdbId },
+      relations: ['genres', 'actors', 'directors', 'producers', 'torrents'],
+    });
+
+    if (exist) {
+      return exist;
     }
 
     return await this.saveMovie(searchResult);
@@ -315,7 +352,7 @@ export class MoviesService {
 
   async getTmdbMovieDetails(
     userId: number,
-    imdbId: string,
+    movieId: string,
     withTorrents: boolean = false,
   ): Promise<MovieDto> {
     const user = await this.usersService.findOne({
@@ -325,7 +362,7 @@ export class MoviesService {
     try {
       const tmdbSearchResult = (
         await axios.get<TMDBMovieDetails>(
-          `https://api.themoviedb.org/3/movie/${imdbId}`,
+          `https://api.themoviedb.org/3/movie/${movieId}`,
           {
             params: {
               api_key: process.env.TMDB_API_KEY,
@@ -334,6 +371,22 @@ export class MoviesService {
           },
         )
       ).data;
+      if (!tmdbSearchResult.imdb_id) {
+        const OmdbSearchResult = (
+          await axios.get(`https://www.omdbapi.com/`, {
+            params: {
+              apikey: process.env.OMDB_API_KEY,
+              t: tmdbSearchResult.title,
+              y: tmdbSearchResult.release_date.split('-')[0],
+            },
+          })
+        ).data;
+        if (OmdbSearchResult.Response === 'False') {
+          throw new NotFoundException('Movie not found on either TMDB or OMDB');
+        } else {
+          tmdbSearchResult.imdb_id = OmdbSearchResult.imdbID;
+        }
+      }
       return {
         imdbId: tmdbSearchResult.imdb_id,
         title: tmdbSearchResult.title,
@@ -366,7 +419,7 @@ export class MoviesService {
       };
     } catch (error) {
       console.error('Error fetching TMDB movie details:', error);
-      throw new Error('Movie not found on TMDB');
+      throw new NotFoundException('Movie not found on either TMDB or OMDB');
     }
   }
 
@@ -419,7 +472,7 @@ export class MoviesService {
       };
     } catch (error) {
       console.error('Error fetching YTS movie details:', error);
-      throw new Error('Movie not found on YTS');
+      throw new NotFoundException('Movie not found on YTS');
     }
   }
 
@@ -584,5 +637,45 @@ export class MoviesService {
     });
 
     return user.favoriteMovies;
+  }
+
+  async getSubtitles(imdbId: string, language: string, res: Response) {
+    const movie = await this.movieRepository.findOne({
+      where: { imdbId },
+      relations: ['subtitles'],
+    });
+    if (!movie) {
+      throw new NotFoundException('Movie not found with the provided IMDB ID');
+    } else if (movie.subtitles && movie.subtitles.length > 0) {
+      const sub = movie.subtitles.find(
+        (sub) => sub.language.toLowerCase() === language.toLowerCase(),
+      );
+      if (!sub) {
+        throw new NotFoundException(
+          `No subtitles found for language: ${language}`,
+        );
+      }
+      const filePath = sub.url;
+      const fileStream = fs.createReadStream(join(process.cwd(), filePath));
+      res.setHeader('Content-Type', 'text/vtt');
+
+      return fileStream.pipe(res);
+    } else if (movie.subtitles && movie.subtitles.length === 0) {
+      const subs = await scrapAndSaveSubtitles(imdbId);
+      movie.subtitles = subs;
+      await this.movieRepository.save(movie);
+      return subs;
+    }
+  }
+
+  async getAllAvailableSubtitles(imdbId: string): Promise<SubtitleDto[]> {
+    const movie = await this.movieRepository.findOne({
+      where: { imdbId },
+      relations: ['subtitles'],
+    });
+    if (!movie) {
+      throw new NotFoundException('Movie not found with the provided IMDB ID');
+    }
+    return plainToInstance(SubtitleDto, movie.subtitles);
   }
 }

@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
 import Comment from './entities/comment.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MoviesService } from 'src/movies/movies.service';
 import { UsersService } from 'src/users/users.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class CommentsService {
@@ -35,11 +35,13 @@ export class CommentsService {
 
   async addComment(userId: number, movieImdbId: string, content: string) {
     const comment = this.commentRepository.create();
-    const movie = await this.moviesService.findMovieByImdbId(movieImdbId);
+    const movie = await this.moviesService.findMovieBy({
+      where: { imdbId: movieImdbId },
+    });
     const user = await this.usersService.findOneBy({ id: userId });
 
     if (!movie) {
-      throw new BadRequestException('Movie not found in the database');
+      throw new NotFoundException('Movie not found in the database');
     }
     comment.content = content;
     comment.movie = movie;
@@ -57,7 +59,7 @@ export class CommentsService {
     });
 
     if (!comment) {
-      throw new BadRequestException(
+      throw new NotFoundException(
         'Comment not found or you do not have permission to delete it',
       );
     }
