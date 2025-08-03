@@ -24,7 +24,7 @@ export async function scrapTorrentLinks(
 
   try {
     const res = await axios.get(
-      `https://thehiddenbay.com/search/${movieName} ${year}`,
+      `https://thehiddenbay.com/search/${movieName.replace('*', '')} ${year}`,
     );
 
     const $ = cheerio.load(res.data);
