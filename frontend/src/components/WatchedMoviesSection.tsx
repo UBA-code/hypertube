@@ -10,6 +10,7 @@ interface Movie {
   coverImage?: string;
   genres: string[];
   duration?: number;
+  isFavorite: boolean;
 }
 
 interface WatchedMoviesSectionProps {

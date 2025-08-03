@@ -3,12 +3,40 @@ import { FaHistory } from "react-icons/fa";
 import MovieCard from "./MovieCard";
 
 interface Movie {
-  id: string;
+  imdbId: string;
   title: string;
   year: number;
   coverImage?: string;
   imdbRating?: number;
-  torrents?: Array<{ size: string }>;
+  genres: string[];
+  duration: number;
+  isWatched: boolean;
+  isFavorite: boolean;
+  synopsis: string;
+  cast: {
+    actors: string[];
+    directors: string[];
+    producers: string[];
+  };
+  torrents: Array<{
+    quality?: string;
+    size?: string;
+    seeders?: number;
+    leechers?: number;
+  }>;
+  subtitles: Array<{
+    language: string;
+    url: string;
+  }>;
+  comments: Array<{
+    id: string;
+    content: string;
+    user: string;
+    timestamp: string;
+  }>;
+  downloadStatus: string;
+  streamUrl: string;
+  lastWatched: string | null;
 }
 
 interface ContinueWatchingSectionProps {
@@ -38,7 +66,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {watchedMovies.slice(0, 5).map((movie) => (
-          <MovieCard key={movie.id} movie={movie} type="watched" />
+          <MovieCard key={movie.imdbId} movie={movie} type="watched" />
         ))}
       </div>
     </section>

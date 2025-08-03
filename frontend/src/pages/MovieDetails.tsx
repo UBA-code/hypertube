@@ -21,6 +21,7 @@ interface Movie {
   duration: number;
   imdbRating: number;
   isWatched: boolean;
+  isFavorite: boolean;
   cast: {
     actors: string[];
     producers: string[];

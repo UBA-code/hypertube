@@ -12,6 +12,7 @@ interface Movie {
   imdbRating?: number;
   genres: string[];
   duration: number;
+  isFavorite: boolean;
   synopsis: string;
 }
 

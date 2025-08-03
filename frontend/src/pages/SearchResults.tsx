@@ -21,6 +21,7 @@ interface Movie {
   duration: number;
   synopsis: string;
   isWatched: boolean;
+  isFavorite: boolean;
   cast: {
     actors: string[];
     directors: string[];

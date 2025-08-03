@@ -13,6 +13,7 @@ interface Movie {
   genres: string[];
   duration: number;
   isWatched: boolean;
+  isFavorite: boolean;
   synopsis: string;
   cast: {
     actors: string[];
@@ -46,8 +47,47 @@ interface MovieCardProps {
 }
 
 const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(movie.isFavorite);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
   const navigate = useNavigate();
+
+  // Function to toggle favorite status
+  const toggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation to movie details
+
+    if (isUpdatingFavorite) return; // Prevent multiple clicks
+
+    setIsUpdatingFavorite(true);
+    const newFavoriteStatus = !isFavorite;
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/movies/favorite/${movie.imdbId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ setTo: newFavoriteStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to update favorite status: ${response.statusText}`
+        );
+      }
+
+      // Update local state only if API call was successful
+      setIsFavorite(newFavoriteStatus);
+    } catch (error) {
+      console.error("Error updating favorite status:", error);
+      // Optionally show a notification to the user about the error
+    } finally {
+      setIsUpdatingFavorite(false);
+    }
+  };
 
   // Function to get rating color based on IMDB score (0.0 = red, 10.0 = green)
   const getRatingColor = (rating: number): string => {
@@ -97,8 +137,11 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
               </button>
 
               <button
-                className="w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
-                onClick={() => setIsFavorite(!isFavorite)}
+                className={`w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center hover:bg-opacity-100 transition ${
+                  isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                onClick={toggleFavorite}
+                disabled={isUpdatingFavorite}
               >
                 {isFavorite ? (
                   <FaHeart className="text-red-500" />

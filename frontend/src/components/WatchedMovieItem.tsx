@@ -3,12 +3,13 @@ import { FaPlay } from "react-icons/fa";
 import { RiMovie2Line } from "react-icons/ri";
 
 interface Movie {
-  id: string;
+  imdbId: string;
   title: string;
   year: number;
   coverImage?: string;
   genres: string[];
   duration?: number;
+  isFavorite: boolean;
 }
 
 interface WatchedMovieItemProps {
