@@ -274,7 +274,8 @@ export class MoviesService {
       )
       .map((movie) => {
         movie.isFavorite = user.favoriteMovies.some(
-          (favMovie) => favMovie.imdbId === movie.imdbId,
+          (favMovie) =>
+            favMovie.title === movie.title && favMovie.year === movie.year,
         );
         return movie;
       });
@@ -301,10 +302,11 @@ export class MoviesService {
     if (!imdbId || imdbId.length === 0) {
       throw new BadRequestException('Movie ID is required');
     }
-    return {
-      ...this.convertToMovieDto(await this.saveAndReturnMovie(userId, imdbId)),
-      isFavorite: await this.isFavoriteMovie(userId, imdbId),
-    };
+    const movieDto = this.convertToMovieDto(
+      await this.saveAndReturnMovie(userId, imdbId),
+    );
+    movieDto.isFavorite = await this.isFavoriteMovie(userId, movieDto.imdbId);
+    return movieDto;
   }
 
   async saveAndReturnMovie(userId: number, imdbId: string): Promise<Movie> {
