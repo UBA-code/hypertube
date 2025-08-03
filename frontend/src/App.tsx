@@ -5,6 +5,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import SearchResults from "./pages/SearchResults";
 import MovieDetails from "./pages/MovieDetails";
+import VideoPlayer from "./pages/VideoPlayer";
 import "./index.css";
 import Dashboard from "./pages/DashBoard";
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/results" element={<SearchResults />} />
           <Route path="/movies/:imdbId" element={<MovieDetails />} />
+          <Route path="/player" element={<VideoPlayer />} />
         </Routes>
       </div>
     </Router>

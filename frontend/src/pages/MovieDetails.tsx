@@ -56,6 +56,11 @@ const MovieDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
+  const [showQualityPopup, setShowQualityPopup] = useState(false);
+  const [availableQualities, setAvailableQualities] = useState<string[]>([]);
+  const [loadingQualities, setLoadingQualities] = useState(false);
+  const [streamingQuality, setStreamingQuality] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [currentUser, setCurrentUser] = useState<{
     id: number;
     username: string;
@@ -144,6 +149,87 @@ const MovieDetails: React.FC = () => {
     } finally {
       setIsUpdatingFavorite(false);
     }
+  };
+
+  // Function to fetch available streaming qualities
+  const fetchAvailableQualities = async () => {
+    if (!movie) return;
+
+    try {
+      setLoadingQualities(true);
+      const response = await fetch(
+        `http://localhost:3000/torrent/availableQualities/${movie.imdbId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch qualities: ${response.statusText}`);
+      }
+
+      const qualities: string[] = await response.json();
+      setAvailableQualities(qualities);
+      setShowQualityPopup(true);
+    } catch (error) {
+      console.error("Error fetching available qualities:", error);
+      // You could show an error message to the user here
+    } finally {
+      setLoadingQualities(false);
+    }
+  };
+
+  // Function to start streaming with selected quality
+  const startStreaming = async (quality: string) => {
+    if (!movie) return;
+
+    try {
+      setIsStreaming(true);
+      setStreamingQuality(quality);
+
+      const response = await fetch(
+        `http://localhost:3000/torrent/stream/${movie.imdbId}?quality=${quality}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to start streaming: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.streamUrl) {
+        // Redirect to video player with the stream URL
+        const streamUrl = encodeURIComponent(result.streamUrl);
+        navigate(
+          `/player?stream=${streamUrl}&title=${encodeURIComponent(movie.title)}`
+        );
+      } else {
+        throw new Error(result.message || "Failed to start streaming");
+      }
+    } catch (error) {
+      console.error("Error starting stream:", error);
+      // You could show an error message to the user here
+    } finally {
+      setIsStreaming(false);
+      setStreamingQuality(null);
+      setShowQualityPopup(false);
+    }
+  };
+
+  // Function to handle Watch Now button click
+  const handleWatchNow = () => {
+    fetchAvailableQualities();
   };
 
   useEffect(() => {
@@ -343,9 +429,13 @@ const MovieDetails: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-4">
-              <button className="flex items-center px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition font-semibold">
+              <button
+                onClick={handleWatchNow}
+                disabled={loadingQualities}
+                className="flex items-center px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <FaPlay className="mr-2" />
-                Watch Now
+                {loadingQualities ? "Loading..." : "Watch Now"}
               </button>
               <button className="flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition">
                 <FaDownload className="mr-2" />
@@ -446,6 +536,50 @@ const MovieDetails: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Quality Selection Popup */}
+      {showQualityPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Select Quality</h3>
+              <button
+                onClick={() => setShowQualityPopup(false)}
+                className="text-gray-400 hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {availableQualities.map((quality) => (
+                <button
+                  key={quality}
+                  onClick={() => startStreaming(quality)}
+                  disabled={isStreaming && streamingQuality === quality}
+                  className="w-full flex items-center justify-between p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center">
+                    <FaPlay className="mr-3 text-red-500" />
+                    <span className="text-white font-medium">{quality}</span>
+                  </div>
+                  {isStreaming && streamingQuality === quality && (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {availableQualities.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-gray-400">
+                  No qualities available for this movie
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
