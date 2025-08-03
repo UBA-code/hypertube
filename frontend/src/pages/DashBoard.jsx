@@ -141,7 +141,7 @@ const Dashboard = () => {
           watchedMovies={watchedMovies}
         />
 
-        <LibrarySection activeTab={activeTab} />
+        <LibrarySection activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <DownloadsSection activeTab={activeTab} />
       </div>

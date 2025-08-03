@@ -68,9 +68,13 @@ const LibraryLoadingSkeleton: React.FC = () => (
 
 interface LibrarySectionProps {
   activeTab: string;
+  setActiveTab: (tab: string) => void;
 }
 
-const LibrarySection: React.FC<LibrarySectionProps> = ({ activeTab }) => {
+const LibrarySection: React.FC<LibrarySectionProps> = ({
+  activeTab,
+  setActiveTab,
+}) => {
   const [favoriteMovies, setFavoriteMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +195,10 @@ const LibrarySection: React.FC<LibrarySectionProps> = ({ activeTab }) => {
           <p className="text-gray-500 mb-4">
             Add movies to your favorites to see them here
           </p>
-          <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg hover:opacity-90 transition">
+          <button
+            onClick={() => setActiveTab("popular")}
+            className="px-4 py-2 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg hover:opacity-90 transition"
+          >
             Browse Movies
           </button>
         </div>
