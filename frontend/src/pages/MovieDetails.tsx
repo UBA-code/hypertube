@@ -55,6 +55,7 @@ const MovieDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
   const [currentUser, setCurrentUser] = useState<{
     id: number;
     username: string;
@@ -109,6 +110,42 @@ const MovieDetails: React.FC = () => {
     return `${mins}m`;
   };
 
+  // Function to toggle favorite status
+  const toggleFavorite = async () => {
+    if (!movie || isUpdatingFavorite) return; // Prevent multiple clicks
+
+    setIsUpdatingFavorite(true);
+    const newFavoriteStatus = !isFavorite;
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/movies/favorite/${movie.imdbId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ setTo: newFavoriteStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to update favorite status: ${response.statusText}`
+        );
+      }
+
+      // Update local state only if API call was successful
+      setIsFavorite(newFavoriteStatus);
+    } catch (error) {
+      console.error("Error updating favorite status:", error);
+      // Optionally show a notification to the user about the error
+    } finally {
+      setIsUpdatingFavorite(false);
+    }
+  };
+
   useEffect(() => {
     const fetchMovieDetails = async () => {
       if (!imdbId) return;
@@ -136,7 +173,7 @@ const MovieDetails: React.FC = () => {
 
         const movieData: Movie = await response.json();
         setMovie(movieData);
-        setIsFavorite(false); // You can implement favorite checking logic here
+        setIsFavorite(movieData.isFavorite);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
         console.error("Error fetching movie details:", err);
@@ -315,15 +352,22 @@ const MovieDetails: React.FC = () => {
                 Download
               </button>
               <button
-                onClick={() => setIsFavorite(!isFavorite)}
-                className="flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
+                onClick={toggleFavorite}
+                disabled={isUpdatingFavorite}
+                className={`flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition ${
+                  isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 {isFavorite ? (
                   <FaHeart className="mr-2 text-red-500" />
                 ) : (
                   <FaRegHeart className="mr-2" />
                 )}
-                {isFavorite ? "Favorited" : "Add to Favorites"}
+                {isUpdatingFavorite
+                  ? "Updating..."
+                  : isFavorite
+                  ? "Favorited"
+                  : "Add to Favorites"}
               </button>
             </div>
 

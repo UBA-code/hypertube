@@ -4,7 +4,7 @@ import { MdLocalMovies } from "react-icons/md";
 import WatchedMovieItem from "./WatchedMovieItem";
 
 interface Movie {
-  id: string;
+  imdbId: string;
   title: string;
   year: number;
   coverImage?: string;
@@ -44,7 +44,7 @@ const WatchedMoviesSection: React.FC<WatchedMoviesSectionProps> = ({
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {watchedMovies.map((movie) => (
-            <WatchedMovieItem key={movie.id} movie={movie} />
+            <WatchedMovieItem key={movie.imdbId} movie={movie} />
           ))}
         </div>
       )}
