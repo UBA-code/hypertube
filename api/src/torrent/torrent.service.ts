@@ -201,4 +201,17 @@ export class TorrentService {
     console.log('Available ranges:', availableRanges);
     return availableRanges;
   }
+
+  async getAvailableQualities(imdbId: string): Promise<string[]> {
+    const movie = await this.moviesService.findMovieBy({
+      where: { imdbId },
+      relations: ['torrents'],
+    });
+
+    if (!movie || !movie.torrents || !movie.torrents.length) {
+      throw new NotFoundException('No torrents found for the given IMDB ID');
+    }
+
+    return movie.torrents.map((torrent) => torrent.quality);
+  }
 }
