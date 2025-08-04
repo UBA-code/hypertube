@@ -670,6 +670,10 @@ export class MoviesService {
     if (!movie) {
       throw new NotFoundException('Movie not found with the provided IMDB ID');
     }
+    if (!movie.subtitles || movie.subtitles.length === 0) {
+      movie.subtitles = await scrapAndSaveSubtitles(imdbId);
+      await this.movieRepository.save(movie);
+    }
     return plainToInstance(SubtitleDto, movie.subtitles);
   }
 }

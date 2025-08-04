@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { extname, join } from 'path';
 import Movie from 'src/movies/entities/movie.entity';
 import { MoviesService } from 'src/movies/movies.service';
@@ -8,14 +8,15 @@ import { Request, Response } from 'express';
 import * as fs from 'fs';
 import { scrapTorrentLinks } from './helpers/scrapTorrentLinks';
 import * as ffmpeg from 'fluent-ffmpeg';
-import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import { InjectRepository } from '@nestjs/typeorm';
 import Torrent from 'src/movies/entities/torrent.entity';
 import { Repository } from 'typeorm';
 import { clc } from '@nestjs/common/utils/cli-colors.util';
-
+import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import * as pump from 'pump';
 @Injectable()
 export class TorrentService {
+  private readonly logger = new Logger(TorrentService.name);
   private readonly engines: Map<string, torrentStream.Engine> = new Map();
   constructor(
     private moviesService: MoviesService,
@@ -187,6 +188,7 @@ export class TorrentService {
       parseInt(range.replace(/bytes=/, '').split('-')[1], 10) || fileSize,
       fileSize - 1,
     );
+    let headersIsSent = false;
 
     if (start >= fileSize || end >= fileSize || start > end) {
       res.status(416).send('Requested range not satisfiable');
@@ -195,23 +197,51 @@ export class TorrentService {
 
     if (!range) {
       res.status(416).send('Range header is required');
+      return;
     }
     if (start >= fileSize || end >= fileSize || start > end) {
       res.status(416).send('Requested range not satisfiable');
+      return;
     } else {
       res.writeHead(206, {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': end - start + 1,
         'Content-Type': 'application/octet-stream',
+        'content-disposition':
+          'inline; filename=' + torrentFile.replace('.mkv', '.mp4'),
       });
+      headersIsSent = true;
       //* Streaming the file
-      fs.createReadStream(torrentFile, {
-        start: start,
-        end: end,
-      }).pipe(res);
+      const fileExt = extname(torrentFile).replace('.', '');
+      console.log(`the file ext is ${fileExt}`);
+
+      if (fileExt === 'mp4' || fileExt === 'webm') {
+        const stream = fs.createReadStream(torrentFile, {
+          start: start,
+          end: end,
+        });
+        pump(stream, res);
+        console.log(`streaming file: ${torrentFile}`);
+      } else if (fileExt === 'mkv') {
+        // console.log(`convert and stream file: ${torrentFile}`);
+        // const command = ffmpeg(fs.createReadStream(torrentFile))
+        //   .videoCodec('libvpx')
+        //   .audioCodec('libvorbis')
+        //   .format('webm')
+        //   .audioBitrate(128)
+        //   .videoBitrate(8000)
+        //   .outputOptions([
+        //     `-threads 5`,
+        //     '-deadline realtime',
+        //     '-error-resilient 1',
+        //   ])
+        //   .on('error', (err) => {});
+      }
     }
   }
+
+  async progressiveStream(path: string, req: Request, res: Response) {}
 
   async getEngine(path: string): Promise<torrentStream.Engine | null> {
     return this.engines.get(path) || null;
