@@ -35,9 +35,12 @@ export class TorrentController {
     @Query('path') path: string,
     @Req() req: Request,
     @Res() res: Response,
-  ): Promise<void> {
+  ) {
+    if (!req.range) {
+      throw new BadRequestException('Range header is required');
+    }
     console.log(`Fetching stream for path: ${path}`);
-    return await this.torrentService.getStreamByPath(path, req, res);
+    return await this.torrentService.startStreaming(path, req, res);
   }
 
   @Get('availableQualities/:imdbId')
@@ -52,11 +55,10 @@ export class TorrentController {
 
   @Get('availableRange')
   async getAvailableRanges(
-    @Query('path') path: string,
     @Query('imdbId') imdbId: string,
   ): Promise<{ start: number; end: number }[]> {
-    if (!path || !imdbId || path.trim() === '' || imdbId.trim() === '') {
-      throw new BadRequestException('Path and IMDB ID are required');
+    if (imdbId.trim() === '') {
+      throw new BadRequestException('IMDB ID is required');
     }
     return await this.torrentService.getAvailableRanges(imdbId);
   }

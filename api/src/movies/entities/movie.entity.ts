@@ -61,22 +61,20 @@ export default class Movie {
   @JoinTable()
   actors: Actor[];
 
-  @OneToMany(() => Torrent, (torrent) => torrent.movie, { cascade: ['insert'] })
+  @OneToMany(() => Torrent, (torrent) => torrent.movie, {
+    cascade: ['insert', 'update'],
+  })
   torrents: Torrent[];
 
   @OneToMany(() => Subtitle, (subtitle) => subtitle.movie, {
-    cascade: ['insert'],
+    cascade: ['insert', 'update'],
   })
   subtitles: Subtitle[];
 
-  @OneToMany(() => Comment, (comment) => comment.movie, { cascade: ['insert'] })
+  @OneToMany(() => Comment, (comment) => comment.movie, {
+    cascade: ['insert', 'update'],
+  })
   comments: Comment[];
-
-  @Column({ nullable: true })
-  downloadStatus: 'not_started' | 'downloading' | 'completed';
-
-  @Column({ nullable: true })
-  streamUrl: string;
 
   @Column({ nullable: true })
   lastWatched: Date;

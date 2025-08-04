@@ -21,6 +21,15 @@ export default class Torrent {
   @Column()
   quality: string;
 
+  @Column({ nullable: true })
+  path: string;
+
+  @Column({
+    enum: ['completed', 'downloading', 'not_started'],
+    default: 'not_started',
+  })
+  downloadStatus: 'completed' | 'downloading' | 'not_started';
+
   @ManyToOne(() => Movie, (movie) => movie.torrents)
   movie: Movie;
 }

@@ -34,7 +34,6 @@ interface Movie {
     user: string;
     timestamp: string;
   }>;
-  downloadStatus: string;
   streamUrl: string;
   lastWatched: string | null;
 }
@@ -48,7 +47,6 @@ interface FavoriteMovieResponse {
   duration: number;
   synopsis: string;
   coverImage?: string;
-  downloadStatus: string;
   streamUrl: string;
   lastWatched: string | null;
 }
@@ -126,7 +124,6 @@ const LibrarySection: React.FC<LibrarySectionProps> = ({
           torrents: [],
           subtitles: [],
           comments: [],
-          downloadStatus: movie.downloadStatus,
           streamUrl: movie.streamUrl,
           lastWatched: movie.lastWatched,
         })

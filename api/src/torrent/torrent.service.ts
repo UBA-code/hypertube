@@ -8,12 +8,19 @@ import { Request, Response } from 'express';
 import * as fs from 'fs';
 import { scrapTorrentLinks } from './helpers/scrapTorrentLinks';
 import * as ffmpeg from 'fluent-ffmpeg';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import { InjectRepository } from '@nestjs/typeorm';
+import Torrent from 'src/movies/entities/torrent.entity';
+import { Repository } from 'typeorm';
+import { clc } from '@nestjs/common/utils/cli-colors.util';
 
 @Injectable()
 export class TorrentService {
   private readonly engines: Map<string, torrentStream.Engine> = new Map();
-  constructor(private moviesService: MoviesService) {}
+  constructor(
+    private moviesService: MoviesService,
+    @InjectRepository(Torrent) private torrentRepository: Repository<Torrent>,
+  ) {}
 
   async getTorrentStream(
     imdbId: string,
@@ -51,18 +58,28 @@ export class TorrentService {
     movie: Movie,
     quality: string,
   ): Promise<streamResponseDto> {
-    if (movie.downloadStatus === 'completed') {
+    const torrent = movie.torrents.find(
+      (torrent) => torrent.quality === quality,
+    );
+    const magnetUrl = torrent?.magnetLink;
+    if (!magnetUrl) {
+      console.error(`No magnet link found for movie: ${movie.title}`);
+      return {
+        success: false,
+        message: 'No magnet link found for this movie.',
+        streamUrl: null,
+      };
+    }
+    if (torrent.downloadStatus === 'completed') {
+      console.log('Torrent already downloaded:', torrent.path);
       return {
         success: true,
         message: 'Torrent already downloaded.',
-        streamUrl: movie.streamUrl,
+        streamUrl: torrent.path,
       };
     }
     return new Promise(async (resolve, reject) => {
       let res;
-      const magnetUrl = movie.torrents.find(
-        (torrent) => torrent.quality === quality,
-      )?.magnetLink;
       const isMagnet = magnetUrl.startsWith('magnet:');
 
       if (!isMagnet) {
@@ -86,7 +103,6 @@ export class TorrentService {
       });
 
       engine.on('ready', async () => {
-        this.engines.set(movie.imdbId, engine);
         engine.files.forEach((file) => file.deselect());
         const desiredFile = engine.files.find((file) =>
           /\.(mp4|mkv|avi|mov|wmv|flv|webm|mpg|mpeg|m4v|3gp|3g2|ts|vob|ogv|rm|rmvb|asf|f4v)$/i.test(
@@ -100,11 +116,13 @@ export class TorrentService {
             message: 'No suitable video file found in torrent.',
           });
         }
+        this.engines.set(desiredFile.path, engine);
         desiredFile.select();
         desiredFile.createReadStream();
-        movie.downloadStatus = 'downloading';
-        movie.streamUrl = desiredFile.path;
+        torrent.downloadStatus = 'downloading';
+        torrent.path = desiredFile.path;
         await this.moviesService.save(movie);
+
         console.log(
           `video found with name ${desiredFile.name} will be saved to ${desiredFile.path}`,
         );
@@ -115,8 +133,8 @@ export class TorrentService {
           );
         });
         engine.on('idle', async () => {
-          movie.downloadStatus = 'completed';
-          movie.streamUrl = desiredFile.path;
+          torrent.downloadStatus = 'completed';
+          this.engines.delete(torrent.path);
           await this.moviesService.save(movie);
           console.log(`${desiredFile.name} downloaded!`);
         });
@@ -127,7 +145,7 @@ export class TorrentService {
         });
       });
       engine.on('error', (err) => {
-        this.engines.delete(movie.imdbId);
+        this.engines.delete(torrent.path);
         console.error(`Error in torrent engine: ${err.message}`);
         reject({
           success: false,
@@ -137,90 +155,77 @@ export class TorrentService {
     });
   }
 
-  async getStreamByPath(
-    path: string,
-    req: Request,
-    res: Response,
-  ): Promise<void> {
+  async startStreaming(path: string, req: Request, res: Response) {
     try {
-      const filePath = join(
-        process.cwd(),
-        'torrents',
-        decodeURIComponent(path),
-      );
-      const stat = await fs.promises.stat(filePath);
-      const fileSize = stat.size;
-      const range = req.headers.range;
-      const movie = await this.moviesService.findMovieBy({
-        where: { streamUrl: path },
+      const torrent = await this.torrentRepository.findOne({
+        where: { path: decodeURIComponent(path) },
+        relations: ['movie'],
       });
-      const availableRanges = await this.getAvailableRanges(movie.imdbId);
-
-      if (!range) {
-        res.status(416).send('Range header is required');
-        return;
-      } else {
-        const parts = range.replace(/bytes=/, '').split('-');
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : start + 1024 * 1024; // if end not provided, set it 1mb
-        if (
-          availableRanges.some((r) => start >= r.start && end <= r.end) ||
-          movie.downloadStatus === 'completed'
-        ) {
-          res.writeHead(206, {
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': end - start + 1,
-            'Content-Type': 'application/octet-stream',
-          });
-          if (extname(filePath) === '.mp4') {
-            const file = fs.createReadStream(filePath, { start, end });
-            file.pipe(res);
-          } else {
-            console.log('----');
-
-            console.log(ffmpegInstaller);
-            ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-            ffmpeg(filePath)
-              .format('mp4') // Convert to MP4 format
-              .videoCodec('libx264') // Use H.264 codec for video
-              .audioCodec('aac') // Use AAC codec for audio
-              .on('error', (err) => {
-                console.error('Error during video conversion:', err.message);
-                res.status(500).send('Error during video conversion');
-              })
-              .on('end', () => {
-                console.log('Video streaming completed');
-              })
-              .pipe(res, { end: true });
-          }
-        } else {
-          res.status(444).send('Requested range not available');
-        }
+      if (!torrent) {
+        return { status: 404, message: 'torrent not found' };
+      }
+      if (torrent.downloadStatus === 'completed') {
+        return await this.streamCompletedTorrent(path, req, res);
       }
     } catch (error) {
-      console.log(`Error streaming file: ${error.message}`);
-      res.status(200).send({
-        success: false,
-        message: 'Error streaming file.',
-        error: error.message,
-      });
+      console.error(`Error starting stream: ${error.message}`);
+      return { status: 500, message: 'Error starting stream.' };
     }
   }
 
-  async getEngine(imdbId: string): Promise<torrentStream.Engine | null> {
-    return this.engines.get(imdbId) || null;
+  async streamCompletedTorrent(path: string, req: Request, res: Response) {
+    const torrentFile = join(
+      process.cwd(),
+      'torrents',
+      decodeURIComponent(path),
+    );
+    const stat = await fs.promises.stat(torrentFile);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+    const start = parseInt(range.replace(/bytes=/, '').split('-')[0], 10);
+    const end = Math.min(
+      parseInt(range.replace(/bytes=/, '').split('-')[1], 10) || fileSize,
+      fileSize - 1,
+    );
+
+    if (start >= fileSize || end >= fileSize || start > end) {
+      res.status(416).send('Requested range not satisfiable');
+      return;
+    }
+
+    if (!range) {
+      res.status(416).send('Range header is required');
+    }
+    if (start >= fileSize || end >= fileSize || start > end) {
+      res.status(416).send('Requested range not satisfiable');
+    } else {
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': end - start + 1,
+        'Content-Type': 'application/octet-stream',
+      });
+      //* Streaming the file
+      fs.createReadStream(torrentFile, {
+        start: start,
+        end: end,
+      }).pipe(res);
+    }
+  }
+
+  async getEngine(path: string): Promise<torrentStream.Engine | null> {
+    return this.engines.get(path) || null;
   }
 
   async getAvailableRanges(
-    imdbId: string,
+    path: string,
   ): Promise<{ start: number; end: number }[]> {
     try {
-      console.log(`Getting available ranges for IMDB ID: ${imdbId}`);
-      const engine = await this.getEngine(imdbId);
+      console.log(`Getting available ranges for : ${path}`);
+      const engine = await this.getEngine(path);
       if (!engine) {
         throw new NotFoundException(
-          'Torrent engine not found for the given IMDB ID',
+          'Torrent engine not found for the given path',
         );
       }
       const file = engine.files[0];
@@ -264,10 +269,20 @@ export class TorrentService {
       relations: ['torrents'],
     });
 
-    if (!movie || !movie.torrents || !movie.torrents.length) {
-      throw new NotFoundException('No torrents found for the given IMDB ID');
+    if (!movie) {
+      throw new NotFoundException('Movie not found');
+    } else if (!movie.torrents || !movie.torrents.length) {
+      movie.torrents = await scrapTorrentLinks(movie.title, movie.year);
+
+      if (movie.title.length) await this.moviesService.save(movie);
     }
 
-    return movie.torrents.map((torrent) => torrent.quality);
+    return movie.torrents
+      .map((torrent) => torrent.quality)
+      .sort(
+        (first, second) =>
+          parseInt(second.replace('p', '')) - parseInt(first.replace('p', '')),
+      )
+      .reverse();
   }
 }

@@ -34,7 +34,6 @@ interface Movie {
     user: string;
     timestamp: string;
   }>;
-  downloadStatus: string;
   streamUrl: string;
   lastWatched: string | null;
 }

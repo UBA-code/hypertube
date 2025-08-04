@@ -43,7 +43,6 @@ interface Movie {
     user: string;
     timestamp: string;
   }>;
-  downloadStatus: string;
   streamUrl: string;
   lastWatched: string | null;
 }
@@ -529,12 +528,6 @@ const MovieDetails: React.FC = () => {
 
             {/* Additional Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-800">
-              <div>
-                <h3 className="font-semibold text-gray-300 mb-1">Status</h3>
-                <p className="text-gray-400 capitalize">
-                  {movie.downloadStatus.replace("_", " ")}
-                </p>
-              </div>
               <div>
                 <h3 className="font-semibold text-gray-300 mb-1">Watched</h3>
                 <p className="text-gray-400">

@@ -30,7 +30,6 @@ interface Movie {
   torrents: unknown[];
   subtitles: unknown[];
   comments: unknown[];
-  downloadStatus: string;
   streamUrl: string;
   lastWatched: string | null;
 }

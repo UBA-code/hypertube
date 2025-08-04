@@ -136,7 +136,6 @@ export class MoviesService {
               torrents: [],
               subtitles: [],
               comments: [],
-              downloadStatus: 'not_started',
               streamUrl: '',
               lastWatched: null,
             };
@@ -207,7 +206,6 @@ export class MoviesService {
           torrents: [],
           subtitles: [],
           comments: [],
-          downloadStatus: 'not_started',
           streamUrl: '',
           lastWatched: null,
         };
@@ -415,7 +413,6 @@ export class MoviesService {
         torrents: withTorrents ? [] : [], // TMDB does not provide torrent info
         subtitles: [],
         comments: [],
-        downloadStatus: 'not_started',
         streamUrl: '',
         lastWatched: null,
       };
@@ -467,7 +464,6 @@ export class MoviesService {
             leechers: torrent.peers,
           }),
         ),
-        downloadStatus: 'not_started',
         lastWatched: null,
         subtitles: [],
         comments: [],
@@ -555,8 +551,6 @@ export class MoviesService {
       })),
       subtitles: [],
       comments: [],
-      downloadStatus: 'not_started',
-      streamUrl: '',
       lastWatched: null,
       usersWatched: [],
     });
@@ -614,8 +608,6 @@ export class MoviesService {
       })),
       subtitles: movie.subtitles,
       comments: movie.comments,
-      downloadStatus: movie.downloadStatus,
-      streamUrl: movie.streamUrl,
       lastWatched: movie.lastWatched,
       isFavorite: false, // This will be set later based on user data
     };

@@ -118,8 +118,6 @@ export class MovieDto {
   @ApiProperty()
   comments: CommentDto[];
   @ApiProperty()
-  downloadStatus: 'not_started' | 'downloading' | 'completed';
-  @ApiProperty()
   streamUrl?: string;
   @ApiProperty()
   isWatched?: boolean;
