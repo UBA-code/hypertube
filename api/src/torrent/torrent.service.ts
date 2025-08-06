@@ -17,7 +17,7 @@ import * as pump from 'pump';
 @Injectable()
 export class TorrentService {
   private readonly logger = new Logger(TorrentService.name);
-  private readonly engines: Map<string, torrentStream.Engine> = new Map();
+  private readonly engines: Map<string, any> = new Map();
   constructor(
     private moviesService: MoviesService,
     @InjectRepository(Torrent) private torrentRepository: Repository<Torrent>,
@@ -118,8 +118,13 @@ export class TorrentService {
           });
         }
         this.engines.set(desiredFile.path, engine);
+        resolve({
+          success: true,
+          message: 'Torrent engine ready.',
+          streamUrl: desiredFile.path,
+        });
+        return;
         desiredFile.select();
-        desiredFile.createReadStream();
         torrent.downloadStatus = 'downloading';
         torrent.path = desiredFile.path;
         await this.moviesService.save(movie);
@@ -158,15 +163,18 @@ export class TorrentService {
 
   async startStreaming(path: string, req: Request, res: Response) {
     try {
+      path = decodeURIComponent(path);
       const torrent = await this.torrentRepository.findOne({
-        where: { path: decodeURIComponent(path) },
+        where: { path },
         relations: ['movie'],
       });
       if (!torrent) {
         return { status: 404, message: 'torrent not found' };
       }
       if (torrent.downloadStatus === 'completed') {
-        return await this.streamCompletedTorrent(path, req, res);
+        await this.streamCompletedTorrent(path, req, res);
+      } else {
+        await this.progressiveStream(path, req, res);
       }
     } catch (error) {
       console.error(`Error starting stream: ${error.message}`);
@@ -188,7 +196,6 @@ export class TorrentService {
       parseInt(range.replace(/bytes=/, '').split('-')[1], 10) || fileSize,
       fileSize - 1,
     );
-    let headersIsSent = false;
 
     if (start >= fileSize || end >= fileSize || start > end) {
       res.status(416).send('Requested range not satisfiable');
@@ -203,17 +210,14 @@ export class TorrentService {
       res.status(416).send('Requested range not satisfiable');
       return;
     } else {
+      //* Streaming the file
+      const fileExt = extname(torrentFile).replace('.', '');
       res.writeHead(206, {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': end - start + 1,
-        'Content-Type': 'application/octet-stream',
-        'content-disposition':
-          'inline; filename=' + torrentFile.replace('.mkv', '.mp4'),
+        'Content-Type': `video/${fileExt}`, // Assuming the file is an mp4 video
       });
-      headersIsSent = true;
-      //* Streaming the file
-      const fileExt = extname(torrentFile).replace('.', '');
       console.log(`the file ext is ${fileExt}`);
 
       if (fileExt === 'mp4' || fileExt === 'webm') {
@@ -224,26 +228,98 @@ export class TorrentService {
         pump(stream, res);
         console.log(`streaming file: ${torrentFile}`);
       } else if (fileExt === 'mkv') {
-        // console.log(`convert and stream file: ${torrentFile}`);
-        // const command = ffmpeg(fs.createReadStream(torrentFile))
-        //   .videoCodec('libvpx')
-        //   .audioCodec('libvorbis')
-        //   .format('webm')
-        //   .audioBitrate(128)
-        //   .videoBitrate(8000)
-        //   .outputOptions([
-        //     `-threads 5`,
-        //     '-deadline realtime',
-        //     '-error-resilient 1',
-        //   ])
-        //   .on('error', (err) => {});
+        // res.writeHead(206, {
+        //   'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        //   'Accept-Ranges': 'bytes',
+        //   'Content-Length': end - start + 1,
+        //   'Content-Type': 'video/webm',
+        //   // 'Cache-Control': 'no-cache',
+        // });
+        // const stream = await this.convertFile(fs.createReadStream(torrentFile));
+        // stream.pipe(res, { end: true });
       }
     }
   }
 
-  async progressiveStream(path: string, req: Request, res: Response) {}
+  async progressiveStream(path: string, req: Request, res: Response) {
+    const engine = await this.getEngine(path);
 
-  async getEngine(path: string): Promise<torrentStream.Engine | null> {
+    if (!engine) {
+      return res
+        .status(404)
+        .send('Torrent engine not found for the given path');
+    }
+    const range = req.headers.range;
+    if (!range) {
+      console.log(clc.red('Range header is not provided'));
+      return res.status(416).send('Range header is required');
+    }
+    const CHUNK_SIZE = 1024 * 1024; // 1MB
+    const torrentFile = join(process.cwd(), 'torrents', path);
+    const stat = await fs.promises.stat(torrentFile);
+    const fileSize = stat.size;
+    const start = parseInt(range.replace(/bytes=/, '').split('-')[0], 10);
+    const end = Math.min(fileSize - 1, start + CHUNK_SIZE);
+    const availableRanges = await this.getAvailableRanges(path);
+
+    if (start > end || start > fileSize || end > fileSize) {
+      console.log(clc.red('Requested range not satisfiable'));
+      return res.status(416).send('Requested range not satisfiable');
+    } else if (
+      !availableRanges.some(
+        (range) =>
+          start >= range.start && start < range.end && end <= range.end,
+      )
+    ) {
+      console.log(
+        clc.red(`Range ${start}-${end} not available yet, waiting...`),
+      );
+      res.writeHead(206, {
+        'retry-after': '5',
+      });
+      return;
+    }
+    console.log(clc.green(`Streaming range ${start}-${end}`));
+    console.log(engine.files[0].length);
+    console.log(stat.size);
+
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': end - start + 1,
+      'Content-Type': `video/${extname(torrentFile).replace('.', '')}`,
+    });
+
+    pump(
+      fs.createReadStream(torrentFile, {
+        start,
+        end,
+      }),
+      res,
+    );
+  }
+
+  async convertFile(stream: fs.ReadStream) {
+    try {
+      ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+      const convertedFile = ffmpeg(stream)
+        .videoCodec('libvpx')
+        .audioCodec('libvorbis')
+        .format('webm')
+        .audioBitrate(128)
+        .videoBitrate(8000)
+        .outputOptions([
+          `-threads 5`,
+          '-deadline realtime',
+          '-error-resilient 1',
+        ]);
+      return convertedFile;
+    } catch {
+      return stream;
+    }
+  }
+
+  async getEngine(path: string): Promise<any | null> {
     return this.engines.get(path) || null;
   }
 
@@ -290,6 +366,23 @@ export class TorrentService {
     } catch (error) {
       console.error(`Error getting available ranges: ${error.message}`);
       return [];
+    }
+  }
+
+  async waitForAvailableRange(path: string, start: number, end: number) {
+    while (true) {
+      const availableRanges = await this.getAvailableRanges(path);
+
+      if (
+        availableRanges.some(
+          (range) =>
+            start >= range.start && start <= range.end && end < range.end,
+        )
+      )
+        return true;
+      console.log(clc.red(`range ${start}-${end} not available yet !!!`));
+
+      await new Promise((res) => setTimeout(res, 1000));
     }
   }
 

@@ -1,6 +1,8 @@
-FROM node:alpine
+FROM node:lts-alpine
 
 WORKDIR /app
+
+RUN apk update && apk add ffmpeg
 
 RUN npm install -g @nestjs/cli
 

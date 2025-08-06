@@ -36,6 +36,8 @@ export class TorrentController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    console.log('$'.repeat(50));
+
     if (!req.range) {
       throw new BadRequestException('Range header is required');
     }
