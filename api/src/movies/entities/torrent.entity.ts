@@ -22,7 +22,7 @@ export default class Torrent {
   quality: string;
 
   @Column({ nullable: true })
-  path: string;
+  hlsPlaylistPath: string;
 
   @Column({
     enum: ['completed', 'downloading', 'not_started'],

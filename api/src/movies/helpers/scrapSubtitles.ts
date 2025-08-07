@@ -97,8 +97,11 @@ export async function fetchAndExtractSrt(url: string): Promise<string | null> {
 
     // 3) Prepare target folder & path
     const targetDir = join(process.cwd(), 'subtitles');
-    if (!fs.existsSync(targetDir)) {
+    try {
       await fs.promises.mkdir(targetDir, { recursive: true });
+    } catch (err) {
+      console.error(`Failed to create subtitles directory: ${targetDir}`, err);
+      throw Error();
     }
     const filename = `${v4()}${extname(entry.path)}`;
     const outPath = join(targetDir, filename);
