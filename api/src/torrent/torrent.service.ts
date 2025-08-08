@@ -298,8 +298,8 @@ export class TorrentService {
         'playlist.m3u8',
       );
       console.log(`M3U8 file found at: ${playlistPath}`);
-    } catch (error) {
-      console.error(`M3U8 file not found for IMDB ID: ${imdbId}`, error);
+    } catch {
+      console.error(`M3U8 file not found for IMDB ID: ${imdbId}`);
       throw new NotFoundException('M3U8 file not found');
     }
 
@@ -371,7 +371,7 @@ export class TorrentService {
       }
 
       // Validate segment filename
-      if (!segment.match(/^segment_\d{3}\.ts$/)) {
+      if (!segment.match(/^segment_\d+\.ts$/)) {
         return res.status(400).json({
           error: 'Invalid segment format',
         });

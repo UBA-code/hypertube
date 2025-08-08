@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import Hls from "hls.js";
 import {
   FaArrowLeft,
   FaPlay,
@@ -14,9 +15,11 @@ const VideoPlayer: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
-  const streamUrl = searchParams.get("stream");
+  const imdbId = searchParams.get("imdbId");
   const movieTitle = searchParams.get("title");
+  const quality = searchParams.get("quality") || "720p";
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -26,15 +29,137 @@ const VideoPlayer: React.FC = () => {
   const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isRequestPending, setIsRequestPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Auto-hide controls timeout
   const controlsTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!streamUrl) {
+    if (!imdbId) {
       navigate("/");
       return;
     }
+
+    const initializeStream = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // First, initiate the stream
+        const streamResponse = await fetch(`http://localhost:3000/torrent/stream/${imdbId}?quality=${quality}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (!streamResponse.ok) {
+          throw new Error('Failed to initiate stream');
+        }
+
+        // Wait a moment for the stream to be ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Get the playlist URL
+        const playlistUrl = `http://localhost:3000/torrent/getStreamPlaylist/${imdbId}/${quality}`;
+
+        if (videoRef.current) {
+          if (Hls.isSupported()) {
+            // Initialize HLS
+            if (hlsRef.current) {
+              hlsRef.current.destroy();
+            }
+
+            hlsRef.current = new Hls({
+              // HLS.js will automatically handle segment requests based on the playlist URLs
+              debug: false,
+              xhrSetup: (xhr, url) => {
+                // Add credentials to all HLS requests (playlist and segments)
+                xhr.withCredentials = true;
+
+                // Check if this is a segment request and redirect to the correct endpoint
+                if (url.includes('.ts')) {
+                  // Extract segment name from the URL
+                  const segmentName = url.split('/').pop();
+                  if (segmentName) {
+                    // Redirect to the proper segment endpoint
+                    const segmentUrl = `http://localhost:3000/torrent/getSegment/${imdbId}/${quality}/${segmentName}`;
+                    xhr.open('GET', segmentUrl, true);
+                    return;
+                  }
+                }
+              }
+            });
+
+            hlsRef.current.loadSource(playlistUrl);
+            hlsRef.current.attachMedia(videoRef.current);
+
+            hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
+              setIsLoading(false);
+              // Try to set initial duration from video element or manifest
+              if (videoRef.current && videoRef.current.duration && !isNaN(videoRef.current.duration)) {
+                setDuration(videoRef.current.duration);
+              }
+              // HLS.js sometimes provides duration in event data
+              // (untyped, so we check for it)
+              // If you want, you can log the event data here for debugging
+            });
+
+            hlsRef.current.on(Hls.Events.FRAG_LOADING, () => {
+              setIsRequestPending(true);
+            });
+
+            hlsRef.current.on(Hls.Events.FRAG_LOADED, () => {
+              setIsRequestPending(false);
+            });
+
+            hlsRef.current.on(Hls.Events.ERROR, () => {
+              setIsRequestPending(false);
+            });
+
+            hlsRef.current.on(Hls.Events.LEVEL_UPDATED, (_, data) => {
+              // Use the actual playlist duration from segments
+              if (data.details && data.details.fragments) {
+                const segments = data.details.fragments;
+                if (segments.length > 0) {
+                  const lastSegment = segments[segments.length - 1];
+                  const playlistDuration = lastSegment.start + lastSegment.duration;
+                  setDuration(prev => (playlistDuration > prev ? playlistDuration : prev));
+                }
+              } else if (data.details && data.details.totalduration) {
+                setDuration(prev => (data.details.totalduration > prev ? data.details.totalduration : prev));
+              }
+              // Fallback: if video element has a longer duration, use it
+              if (videoRef.current && videoRef.current.duration && !isNaN(videoRef.current.duration)) {
+                setDuration(prev => (videoRef.current!.duration > prev ? videoRef.current!.duration : prev));
+              }
+            });
+
+            hlsRef.current.on(Hls.Events.ERROR, (_, data) => {
+              // console.error('HLS error:', data);
+              // setError(`Streaming error: ${data.details}`);
+              // setIsLoading(false);
+            });
+
+          } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+            // Native HLS support (Safari)
+            videoRef.current.src = playlistUrl;
+            setIsLoading(false);
+          } else {
+            setError('HLS is not supported in this browser');
+            setIsLoading(false);
+          }
+        }
+      } catch (error) {
+        // console.error('Error initializing stream:', error);
+        // setError('Failed to load video stream');
+        // setIsLoading(false);
+      }
+    };
+
+    initializeStream();
 
     // Reset controls timeout when mouse moves
     const handleMouseMove = () => {
@@ -65,8 +190,11 @@ const VideoPlayer: React.FC = () => {
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
     };
-  }, [streamUrl, navigate]);
+  }, [imdbId, quality, navigate]);
 
   const togglePlayPause = () => {
     if (videoRef.current) {
@@ -99,14 +227,42 @@ const VideoPlayer: React.FC = () => {
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
+      // Don't update duration from video element for live streams
+      // Duration is managed by HLS LEVEL_UPDATED events
     }
   };
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setDuration(videoRef.current.duration);
+      // For live streams, don't use video element duration
+      // Always start from the beginning
+      videoRef.current.currentTime = 0;
+      setCurrentTime(0);
       setIsLoading(false);
     }
+  };
+
+  const handleDurationChange = () => {
+    // For sliding window live streams, ignore video element duration changes
+    // Duration is managed by HLS LEVEL_UPDATED events only
+  };
+
+  const handleWaiting = () => {
+    // Only set buffering if the video is actually trying to play
+    if (videoRef.current && !videoRef.current.paused) {
+      setIsBuffering(true);
+    }
+  };
+
+  const handleCanPlay = () => {
+    setIsLoading(false);
+    setIsBuffering(false);
+    setIsRequestPending(false);
+  };
+
+  const handlePlaying = () => {
+    setIsBuffering(false);
+    setIsRequestPending(false);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,21 +295,16 @@ const VideoPlayer: React.FC = () => {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  if (!streamUrl) {
+  if (!imdbId) {
     return null;
   }
-
-  const fullStreamUrl = `http://localhost:3000/torrent/stream?path=${decodeURIComponent(
-    streamUrl
-  )}`;
 
   return (
     <div className="h-screen bg-black flex flex-col relative">
       {/* Header */}
       <div
-        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-          showControls ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
+          }`}
       >
         <div className="flex items-center justify-between">
           <button
@@ -172,11 +323,29 @@ const VideoPlayer: React.FC = () => {
 
       {/* Video Container */}
       <div className="flex-1 relative flex items-center justify-center">
-        {isLoading && (
+        {(isLoading || error || (isBuffering && isRequestPending)) && (
           <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
-              <p className="text-white">Loading video...</p>
+              {(isLoading || (isBuffering && isRequestPending)) && !error && (
+                <>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                  {/* <p className="text-white"> */}
+                  {/* </p> */}
+                </>
+              )}
+              {error && (
+                <div className="text-center">
+                  <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                  <p className="text-white text-lg mb-2">Error loading video</p>
+                  <p className="text-gray-300 text-sm">{error}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -184,23 +353,25 @@ const VideoPlayer: React.FC = () => {
         <video
           ref={videoRef}
           className="w-full h-full object-contain"
+          autoPlay
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onDurationChange={handleDurationChange}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onCanPlay={() => setIsLoading(false)}
+          onCanPlay={handleCanPlay}
+          onWaiting={handleWaiting}
+          onPlaying={handlePlaying}
           onClick={togglePlayPause}
         >
-          <source src={fullStreamUrl} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
       </div>
 
       {/* Controls */}
       <div
-        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-          showControls ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
+          }`}
       >
         {/* Progress Bar */}
         <div className="mb-4">
@@ -212,9 +383,8 @@ const VideoPlayer: React.FC = () => {
             onChange={handleSeek}
             className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
             style={{
-              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${
-                (currentTime / duration) * 100
-              }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
+              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(currentTime / duration) * 100
+                }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
             }}
           />
           <div className="flex justify-between text-white text-sm mt-1">
