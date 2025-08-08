@@ -185,73 +185,29 @@ export class TorrentService {
   }
 
   async startHlsConversion(videoFile: any, hlsDir: string, movieId: string) {
-    const hlsFullDir = join(process.cwd(), hlsDir);
-    try {
-      await fs.promises.mkdir(hlsFullDir, { recursive: true });
-    } catch (err) {
-      this.logger.warn(`Failed to create HLS directory: ${hlsFullDir}`, err);
-      throw err;
-    }
-    const playlistPath = join(hlsFullDir, 'playlist.m3u8');
-    const segmentPattern = join(hlsFullDir, 'segment_%03d.ts');
-
-    this.logger.log(`Starting HLS conversion for movie: ${movieId}`);
-
-    // Create readable stream from the torrent file
-    const videoStream = videoFile.createReadStream();
-    const fileExtension = extname(videoFile.name);
-    let ffmpegCommand: ffmpeg.FfmpegCommand;
-
-    if (['.mp4', '.webm'].includes(fileExtension)) {
-      ffmpegCommand = ffmpeg(videoStream)
-        .addOptions([
-          '-sn', // Skip subtitles
-          '-c copy', // Copy without re-encoding
-          '-f hls',
-          '-hls_time 4',
-          '-hls_list_size 0',
-          '-hls_flags independent_segments',
-          '-hls_segment_filename',
-          segmentPattern,
-        ])
-        .output(playlistPath);
-    } else if (['.mkv'].includes(fileExtension)) {
-      // Setup FFmpeg conversion
-      ffmpegCommand = this.getFFmpegMkvConversionCommand(
-        videoStream,
-        segmentPattern,
-        playlistPath,
-      );
-    }
-
-    // Handle FFmpeg events
-    ffmpegCommand.on('start', (commandLine) => {
-      this.logger.log(`FFmpeg started: ${commandLine}`);
-    });
-
-    ffmpegCommand.on('progress', (progress) => {
-      if (progress.percent) {
-        this.logger.log(
-          `Conversion progress: ${Math.round(progress.percent)}%`,
-        );
-      }
-    });
-
-    ffmpegCommand.on('end', () => {
-      this.logger.log(`HLS conversion completed for movie: ${movieId}`);
-    });
-
-    // Fallback to re-encoding if copy fails
-    ffmpegCommand.on('error', () => {
+    return new Promise<string>(async (resolve) => {
+      const hlsFullDir = join(process.cwd(), hlsDir);
       try {
-        this.logger.error('Copy failed, retrying with re-encoding...');
+        await fs.promises.mkdir(hlsFullDir, { recursive: true });
+      } catch (err) {
+        this.logger.warn(`Failed to create HLS directory: ${hlsFullDir}`, err);
+        throw err;
+      }
+      const playlistPath = join(hlsFullDir, 'playlist.m3u8');
+      const segmentPattern = join(hlsFullDir, 'segment_%03d.ts');
 
-        const fallbackCommand = ffmpeg(videoStream)
+      this.logger.log(`Starting HLS conversion for movie: ${movieId}`);
+
+      // Create readable stream from the torrent file
+      const videoStream = videoFile.createReadStream();
+      const fileExtension = extname(videoFile.name);
+      let ffmpegCommand: ffmpeg.FfmpegCommand;
+
+      if (['.mp4', '.webm'].includes(fileExtension)) {
+        ffmpegCommand = ffmpeg(videoStream)
           .addOptions([
-            '-sn',
-            '-c:v libx264',
-            '-c:a aac',
-            '-preset veryfast',
+            '-sn', // Skip subtitles
+            '-c copy', // Copy without re-encoding
             '-f hls',
             '-hls_time 4',
             '-hls_list_size 0',
@@ -260,18 +216,63 @@ export class TorrentService {
             segmentPattern,
           ])
           .output(playlistPath);
-
-        fallbackCommand.run();
-      } catch (error) {
-        this.logger.error('Fallback re-encoding failed:', error);
-        throw new Error('HLS conversion failed.');
+      } else if (['.mkv'].includes(fileExtension)) {
+        // Setup FFmpeg conversion
+        ffmpegCommand = this.getFFmpegMkvConversionCommand(
+          videoStream,
+          segmentPattern,
+          playlistPath,
+        );
       }
+
+      // Handle FFmpeg events
+      ffmpegCommand.on('start', (commandLine) => {
+        this.logger.log(`FFmpeg started: ${commandLine}`);
+      });
+
+      ffmpegCommand.on('progress', (progress) => {
+        resolve(join(hlsDir, 'playlist.m3u8'));
+        if (progress.percent) {
+          this.logger.log(
+            `Conversion progress: ${Math.round(progress.percent)}%`,
+          );
+        }
+      });
+
+      ffmpegCommand.on('end', () => {
+        this.logger.log(`HLS conversion completed for movie: ${movieId}`);
+      });
+
+      // Fallback to re-encoding if copy fails
+      ffmpegCommand.on('error', () => {
+        try {
+          this.logger.error('Copy failed, retrying with re-encoding...');
+
+          const fallbackCommand = ffmpeg(videoStream)
+            .addOptions([
+              '-sn',
+              '-c:v libx264',
+              '-c:a aac',
+              '-preset veryfast',
+              '-f hls',
+              '-hls_time 4',
+              '-hls_list_size 0',
+              '-hls_flags independent_segments',
+              '-hls_segment_filename',
+              segmentPattern,
+            ])
+            .output(playlistPath);
+
+          fallbackCommand.run();
+        } catch (error) {
+          this.logger.error('Fallback re-encoding failed:', error);
+          throw new Error('HLS conversion failed.');
+        }
+      });
+
+      // Start the conversion
+      ffmpegCommand.run();
     });
-
-    // Start the conversion
-    ffmpegCommand.run();
-
-    return join(hlsDir, 'playlist.m3u8');
   }
 
   async getStreamPlaylist(imdbId: string, quality: string, res: Response) {
