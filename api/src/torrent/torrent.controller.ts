@@ -8,8 +8,9 @@ import {
   Res,
 } from '@nestjs/common';
 import { TorrentService } from './torrent.service';
-import streamResponseDto from './dto/stream-response.dto';
 import { Response } from 'express';
+// import { SkipAuth } from 'src/auth/decorators/skip-auth.decorator';
+import createStreamResponseDto from './interfaces/responses';
 
 @Controller('torrent')
 export class TorrentController {
@@ -19,7 +20,7 @@ export class TorrentController {
   async getTorrentStream(
     @Param('imdbId') imdbId: string,
     @Query('quality') quality: string,
-  ): Promise<streamResponseDto> {
+  ): Promise<createStreamResponseDto> {
     console.log(
       `Fetching torrent stream for IMDB ID: ${imdbId}, Quality: ${quality}`,
     );
@@ -29,18 +30,23 @@ export class TorrentController {
     return await this.torrentService.createStream(imdbId, quality);
   }
 
+  // @SkipAuth()
   @Get('getStreamPlaylist/:imdbId/:quality')
   async getStreamPlaylist(
     @Param('imdbId') imdbId: string,
     @Param('quality') quality: string,
     @Res() res: Response,
   ) {
+    // if (quality.startsWith('segment')) {
+    //   return await this.serveSegment(imdbId, '1080p', quality, res);
+    // }
     if (!imdbId || !quality || imdbId.length === 0 || quality.length === 0) {
       throw new BadRequestException('IMDB ID and quality are required');
     }
     return await this.torrentService.getStreamPlaylist(imdbId, quality, res);
   }
 
+  // @SkipAuth()
   @Get('getSegment/:imdbId/:quality/:segment')
   @Header('Content-Type', 'video/MP2T')
   @Header('Accept-Ranges', 'bytes')

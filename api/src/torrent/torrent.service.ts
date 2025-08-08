@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { join } from 'path';
+import { extname, join } from 'path';
 import Movie from 'src/movies/entities/movie.entity';
 import { MoviesService } from 'src/movies/movies.service';
 import * as torrentStream from 'torrent-stream';
@@ -16,6 +16,7 @@ import createStreamResponseDto from './interfaces/responses';
 @Injectable()
 export class TorrentService {
   private readonly logger = new Logger(TorrentService.name);
+
   constructor(
     private moviesService: MoviesService,
     @InjectRepository(Torrent) private torrentRepository: Repository<Torrent>,
@@ -155,6 +156,7 @@ export class TorrentService {
             'No suitable video file found in torrent.',
           );
         }
+        this.logger.log(`Found video file: ${desiredFile.name}`);
         desiredFile.select();
         desiredFile.createReadStream();
         torrent.downloadStatus = 'downloading';
@@ -197,21 +199,30 @@ export class TorrentService {
 
     // Create readable stream from the torrent file
     const videoStream = videoFile.createReadStream();
+    const fileExtension = extname(videoFile.name);
+    let ffmpegCommand: ffmpeg.FfmpegCommand;
 
-    // Setup FFmpeg conversion
-    const ffmpegCommand = ffmpeg(videoStream)
-      .addOptions([
-        '-c:v libx264', // Video codec
-        '-c:a aac', // Audio codec
-        '-preset veryfast', // Encoding speed
-        '-f hls', // Output format
-        '-hls_time 4', // Segment duration (4 seconds)
-        '-hls_list_size 0', // Keep all segments
-        '-hls_flags independent_segments', // Make segments independent
-        '-hls_segment_filename',
+    if (['.mp4', '.webm'].includes(fileExtension)) {
+      ffmpegCommand = ffmpeg(videoStream)
+        .addOptions([
+          '-sn', // Skip subtitles
+          '-c copy', // Copy without re-encoding
+          '-f hls',
+          '-hls_time 4',
+          '-hls_list_size 0',
+          '-hls_flags independent_segments',
+          '-hls_segment_filename',
+          segmentPattern,
+        ])
+        .output(playlistPath);
+    } else if (['.mkv'].includes(fileExtension)) {
+      // Setup FFmpeg conversion
+      ffmpegCommand = this.getFFmpegMkvConversionCommand(
+        videoStream,
         segmentPattern,
-      ])
-      .output(playlistPath);
+        playlistPath,
+      );
+    }
 
     // Handle FFmpeg events
     ffmpegCommand.on('start', (commandLine) => {
@@ -230,8 +241,31 @@ export class TorrentService {
       this.logger.log(`HLS conversion completed for movie: ${movieId}`);
     });
 
-    ffmpegCommand.on('error', (err) => {
-      this.logger.error(`FFmpeg error for movie ${movieId}:`, err);
+    // Fallback to re-encoding if copy fails
+    ffmpegCommand.on('error', () => {
+      try {
+        this.logger.error('Copy failed, retrying with re-encoding...');
+
+        const fallbackCommand = ffmpeg(videoStream)
+          .addOptions([
+            '-sn',
+            '-c:v libx264',
+            '-c:a aac',
+            '-preset veryfast',
+            '-f hls',
+            '-hls_time 4',
+            '-hls_list_size 0',
+            '-hls_flags independent_segments',
+            '-hls_segment_filename',
+            segmentPattern,
+          ])
+          .output(playlistPath);
+
+        fallbackCommand.run();
+      } catch (error) {
+        this.logger.error('Fallback re-encoding failed:', error);
+        throw new Error('HLS conversion failed.');
+      }
     });
 
     // Start the conversion
@@ -270,6 +304,50 @@ export class TorrentService {
     }
 
     pump(fs.createReadStream(playlistPath), res);
+  }
+
+  getFFmpegMkvConversionCommand(
+    videoStream: fs.ReadStream,
+    segmentPattern: string,
+    playlistPath: string,
+  ) {
+    return ffmpeg(videoStream)
+      .addOptions([
+        '-sn', // Skip subtitle streams
+        '-map 0:v:0', // Map first video stream
+        '-map 0:a:0', // Map first audio stream
+
+        // Video settings - force 8-bit and baseline profile
+        '-c:v libx264',
+        '-profile:v baseline', // Force baseline profile (not High)
+        '-level 3.0',
+        '-pix_fmt yuv420p', // Force 8-bit (not yuv420p10le)
+        '-preset veryfast',
+
+        // Audio settings - handle 6-channel properly
+        '-c:a aac',
+        '-ac 2', // Downmix 6 channels to stereo
+        '-ar 48000', // Keep sample rate
+        '-b:a 128k', // Set audio bitrate
+
+        // Fix timing issues
+        '-avoid_negative_ts make_zero',
+        '-fflags +genpts',
+
+        // HLS settings
+        '-f hls',
+        '-hls_time 4',
+        '-hls_list_size 0',
+        '-hls_flags independent_segments+split_by_time',
+        '-hls_segment_type mpegts',
+        '-hls_segment_filename',
+        segmentPattern,
+
+        // Additional compatibility fixes
+        '-force_key_frames expr:gte(t,n_forced*4)', // Force keyframes every 4 seconds
+        '-x264opts keyint=96:min-keyint=96:scenecut=-1', // GOP settings for 24fps
+      ])
+      .output(playlistPath);
   }
 
   async getSegment(
