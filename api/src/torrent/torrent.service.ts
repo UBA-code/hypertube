@@ -74,6 +74,27 @@ export class TorrentService {
       torrent.hlsPlaylistPath = playlistPath;
       await this.moviesService.save(movie);
 
+      await new Promise((resolve) => {
+        const interval = setInterval(async () => {
+          try {
+            await fs.promises.access(
+              join(process.cwd(), playlistPath),
+              fs.constants.F_OK,
+            );
+            this.logger.log(
+              `HLS playlist ready for IMDB ID: ${imdbId}, Quality: ${quality}`,
+            );
+            clearInterval(interval);
+            resolve(true);
+          } catch {
+            this.logger.warn(
+              `HLS playlist not ready yet for IMDB ID: ${imdbId}, Quality: ${quality}`,
+            );
+            return;
+          }
+        }, 1000);
+      });
+
       return {
         success: true,
         movieId: movie.imdbId,

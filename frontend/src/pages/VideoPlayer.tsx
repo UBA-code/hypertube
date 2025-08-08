@@ -59,9 +59,6 @@ const VideoPlayer: React.FC = () => {
           throw new Error('Failed to initiate stream');
         }
 
-        // Wait a moment for the stream to be ready
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
         // Get the playlist URL
         const playlistUrl = `http://localhost:3000/torrent/getStreamPlaylist/${imdbId}/${quality}`;
 
