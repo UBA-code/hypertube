@@ -52,6 +52,10 @@ import Producer from './movies/entities/Producer.entity';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'subtitles'),
+      serveRoot: '/subtitles',
+    }),
     MoviesModule,
     RevokedTokensModule,
     CommentsModule,

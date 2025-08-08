@@ -9,7 +9,21 @@ import {
   FaVolumeMute,
   FaExpand,
   FaCompress,
+  FaClosedCaptioning,
 } from "react-icons/fa";
+import "./VideoPlayer.css";
+
+interface Subtitle {
+  id: number;
+  language: string;
+  url: string;
+}
+
+interface SubtitleCue {
+  startTime: number;
+  endTime: number;
+  text: string;
+}
 
 const VideoPlayer: React.FC = () => {
   const navigate = useNavigate();
@@ -32,6 +46,13 @@ const VideoPlayer: React.FC = () => {
   const [isBuffering, setIsBuffering] = useState(false);
   const [isRequestPending, setIsRequestPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
+  const [selectedSubtitle, setSelectedSubtitle] = useState<Subtitle | null>(
+    null
+  );
+  const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+  const [currentSubtitleText, setCurrentSubtitleText] = useState<string>("");
+  const [subtitleCues, setSubtitleCues] = useState<SubtitleCue[]>([]);
 
   // Auto-hide controls timeout
   const controlsTimeoutRef = useRef<number | null>(null);
@@ -47,17 +68,44 @@ const VideoPlayer: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        // First, initiate the stream
-        const streamResponse = await fetch(`http://localhost:3000/torrent/stream/${imdbId}?quality=${quality}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-        if (!streamResponse.ok) {
-          throw new Error('Failed to initiate stream');
+        // Fetch available subtitles
+        try {
+          const subtitlesResponse = await fetch(
+            `http://localhost:3000/movies/subtitles/${imdbId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            }
+          );
+
+          if (subtitlesResponse.ok) {
+            const subtitlesData: Subtitle[] = await subtitlesResponse.json();
+            setSubtitles(subtitlesData);
+          }
+        } catch (subtitleError) {
+          console.warn("Failed to fetch subtitles:", subtitleError);
         }
+
+        // First, initiate the stream
+        const streamResponse = await fetch(
+          `http://localhost:3000/torrent/stream/${imdbId}?quality=${quality}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+        if (!streamResponse.ok) {
+          throw new Error("Failed to initiate stream");
+        }
+
+        // Wait a moment for the stream to be ready
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Get the playlist URL
         const playlistUrl = `http://localhost:3000/torrent/getStreamPlaylist/${imdbId}/${quality}`;
@@ -72,22 +120,22 @@ const VideoPlayer: React.FC = () => {
             hlsRef.current = new Hls({
               // HLS.js will automatically handle segment requests based on the playlist URLs
               debug: false,
-              xhrSetup: (xhr, url) => {
+              xhrSetup: (xhr: any, url: string) => {
                 // Add credentials to all HLS requests (playlist and segments)
                 xhr.withCredentials = true;
 
                 // Check if this is a segment request and redirect to the correct endpoint
-                if (url.includes('.ts')) {
+                if (url.includes(".ts")) {
                   // Extract segment name from the URL
-                  const segmentName = url.split('/').pop();
+                  const segmentName = url.split("/").pop();
                   if (segmentName) {
                     // Redirect to the proper segment endpoint
                     const segmentUrl = `http://localhost:3000/torrent/getSegment/${imdbId}/${quality}/${segmentName}`;
-                    xhr.open('GET', segmentUrl, true);
+                    xhr.open("GET", segmentUrl, true);
                     return;
                   }
                 }
-              }
+              },
             });
 
             hlsRef.current.loadSource(playlistUrl);
@@ -96,7 +144,11 @@ const VideoPlayer: React.FC = () => {
             hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
               setIsLoading(false);
               // Try to set initial duration from video element or manifest
-              if (videoRef.current && videoRef.current.duration && !isNaN(videoRef.current.duration)) {
+              if (
+                videoRef.current &&
+                videoRef.current.duration &&
+                !isNaN(videoRef.current.duration)
+              ) {
                 setDuration(videoRef.current.duration);
               }
               // HLS.js sometimes provides duration in event data
@@ -116,40 +168,56 @@ const VideoPlayer: React.FC = () => {
               setIsRequestPending(false);
             });
 
-            hlsRef.current.on(Hls.Events.LEVEL_UPDATED, (_, data) => {
+            hlsRef.current.on(Hls.Events.LEVEL_UPDATED, (_: any, data: any) => {
               // Use the actual playlist duration from segments
               if (data.details && data.details.fragments) {
                 const segments = data.details.fragments;
                 if (segments.length > 0) {
                   const lastSegment = segments[segments.length - 1];
-                  const playlistDuration = lastSegment.start + lastSegment.duration;
-                  setDuration(prev => (playlistDuration > prev ? playlistDuration : prev));
+                  const playlistDuration =
+                    lastSegment.start + lastSegment.duration;
+                  setDuration((prev) =>
+                    playlistDuration > prev ? playlistDuration : prev
+                  );
                 }
               } else if (data.details && data.details.totalduration) {
-                setDuration(prev => (data.details.totalduration > prev ? data.details.totalduration : prev));
+                setDuration((prev) =>
+                  data.details.totalduration > prev
+                    ? data.details.totalduration
+                    : prev
+                );
               }
               // Fallback: if video element has a longer duration, use it
-              if (videoRef.current && videoRef.current.duration && !isNaN(videoRef.current.duration)) {
-                setDuration(prev => (videoRef.current!.duration > prev ? videoRef.current!.duration : prev));
+              if (
+                videoRef.current &&
+                videoRef.current.duration &&
+                !isNaN(videoRef.current.duration)
+              ) {
+                setDuration((prev) =>
+                  videoRef.current!.duration > prev
+                    ? videoRef.current!.duration
+                    : prev
+                );
               }
             });
 
-            hlsRef.current.on(Hls.Events.ERROR, (_, data) => {
+            hlsRef.current.on(Hls.Events.ERROR, () => {
               // console.error('HLS error:', data);
               // setError(`Streaming error: ${data.details}`);
               // setIsLoading(false);
             });
-
-          } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+          } else if (
+            videoRef.current.canPlayType("application/vnd.apple.mpegurl")
+          ) {
             // Native HLS support (Safari)
             videoRef.current.src = playlistUrl;
             setIsLoading(false);
           } else {
-            setError('HLS is not supported in this browser');
+            setError("HLS is not supported in this browser");
             setIsLoading(false);
           }
         }
-      } catch (error) {
+      } catch {
         // console.error('Error initializing stream:', error);
         // setError('Failed to load video stream');
         // setIsLoading(false);
@@ -178,12 +246,21 @@ const VideoPlayer: React.FC = () => {
       }, 1000);
     };
 
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest(".subtitle-menu")) {
+        setShowSubtitleMenu(false);
+      }
+    };
+
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener("click", handleClickOutside);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("click", handleClickOutside);
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
@@ -224,6 +301,10 @@ const VideoPlayer: React.FC = () => {
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
+      // Update subtitle text if subtitles are loaded
+      if (selectedSubtitle && subtitleCues.length > 0) {
+        updateSubtitleText(videoRef.current.currentTime);
+      }
       // Don't update duration from video element for live streams
       // Duration is managed by HLS LEVEL_UPDATED events
     }
@@ -292,6 +373,154 @@ const VideoPlayer: React.FC = () => {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const handleSubtitleSelect = async (subtitle: Subtitle | null) => {
+    if (videoRef.current) {
+      // Clear any existing subtitles
+      setCurrentSubtitleText("");
+      setSubtitleCues([]);
+
+      if (subtitle) {
+        try {
+          console.log("Loading subtitle:", {
+            language: subtitle.language,
+            url: `http://localhost:3000/${subtitle.url}`,
+            originalUrl: subtitle.url,
+          });
+
+          setSelectedSubtitle(subtitle);
+
+          // Load subtitle manually using our SRT parser
+          await loadSubtitleManually(subtitle);
+        } catch (error) {
+          console.error("Error loading subtitle:", error);
+        }
+      } else {
+        setSelectedSubtitle(null);
+        setSubtitleCues([]);
+        setCurrentSubtitleText("");
+      }
+    }
+    setShowSubtitleMenu(false);
+  };
+
+  const toggleSubtitleMenu = () => {
+    setShowSubtitleMenu(!showSubtitleMenu);
+  };
+
+  // Alternative method to load subtitles manually if needed
+  const loadSubtitleManually = async (subtitle: Subtitle) => {
+    try {
+      const response = await fetch(`http://localhost:3000/${subtitle.url}`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch subtitle: ${response.status}`);
+      }
+
+      // For Arabic and other special languages, ensure proper text handling
+      let srtContent: string;
+      if (subtitle.language === "Arabic") {
+        // Handle Arabic encoding explicitly
+        const arrayBuffer = await response.arrayBuffer();
+        const decoder = new TextDecoder("utf-8");
+        srtContent = decoder.decode(arrayBuffer);
+      } else {
+        srtContent = await response.text();
+      }
+
+      console.log(
+        "Subtitle content loaded:",
+        srtContent.substring(0, 200) + "..."
+      );
+
+      // Parse SRT content into cues
+      const cues = parseSRT(srtContent);
+      setSubtitleCues(cues);
+      console.log("Parsed subtitle cues:", cues.length);
+
+      // Debug Arabic content specifically
+      if (subtitle.language === "Arabic") {
+        console.log("Arabic subtitle sample:", cues.slice(0, 3));
+      }
+    } catch (error) {
+      console.error("Failed to load subtitle manually:", error);
+    }
+  };
+
+  // Parse SRT format to subtitle cues
+  const parseSRT = (srtText: string) => {
+    const cues = [];
+    const blocks = srtText.trim().split(/\n\s*\n/);
+
+    for (const block of blocks) {
+      const lines = block.trim().split("\n");
+      if (lines.length >= 3) {
+        const timeMatch = lines[1].match(
+          /(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})/
+        );
+        if (timeMatch) {
+          const startTime =
+            parseInt(timeMatch[1]) * 3600 +
+            parseInt(timeMatch[2]) * 60 +
+            parseInt(timeMatch[3]) +
+            parseInt(timeMatch[4]) / 1000;
+
+          const endTime =
+            parseInt(timeMatch[5]) * 3600 +
+            parseInt(timeMatch[6]) * 60 +
+            parseInt(timeMatch[7]) +
+            parseInt(timeMatch[8]) / 1000;
+
+          // For Arabic and RTL languages, preserve the text better
+          let text = lines.slice(2).join("\n");
+
+          // Only remove HTML tags but preserve text formatting for RTL languages
+          text = text.replace(/<[^>]*>/g, "");
+
+          // Clean up any BOM or invisible characters that might affect RTL rendering
+          text = text.replace(/\uFEFF/g, "").trim();
+
+          cues.push({
+            startTime,
+            endTime,
+            text,
+          });
+        }
+      }
+    }
+
+    return cues;
+  };
+
+  // Update subtitle text based on current time
+  const updateSubtitleText = (currentTime: number) => {
+    if (subtitleCues.length === 0) {
+      setCurrentSubtitleText("");
+      return;
+    }
+
+    const currentCue = subtitleCues.find(
+      (cue) => currentTime >= cue.startTime && currentTime <= cue.endTime
+    );
+
+    const newText = currentCue ? currentCue.text : "";
+
+    // Debug Arabic specifically
+    if (
+      selectedSubtitle?.language === "Arabic" &&
+      newText !== currentSubtitleText
+    ) {
+      console.log("Arabic subtitle update:", {
+        time: currentTime,
+        text: newText,
+        cue: currentCue,
+      });
+    }
+
+    setCurrentSubtitleText(newText);
+  };
+
   if (!imdbId) {
     return null;
   }
@@ -300,8 +529,9 @@ const VideoPlayer: React.FC = () => {
     <div className="h-screen bg-black flex flex-col relative">
       {/* Header */}
       <div
-        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
-          }`}
+        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
       >
         <div className="flex items-center justify-between">
           <button
@@ -360,15 +590,66 @@ const VideoPlayer: React.FC = () => {
           onWaiting={handleWaiting}
           onPlaying={handlePlaying}
           onClick={togglePlayPause}
+          crossOrigin="anonymous"
+          preload="metadata"
         >
           Your browser does not support the video tag.
         </video>
+
+        {/* Manual Subtitle Display */}
+        {selectedSubtitle && currentSubtitleText && (
+          <div
+            className={`absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-center max-w-4xl ${
+              selectedSubtitle.language === "Arabic"
+                ? "rtl subtitle-arabic"
+                : "ltr"
+            }`}
+          >
+            <div
+              className={`text-lg leading-relaxed ${
+                selectedSubtitle.language === "Arabic" ? "arabic-text" : ""
+              }`}
+              style={{
+                textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
+                fontSize:
+                  selectedSubtitle.language === "Arabic" ? "20px" : "18px",
+                fontWeight: "normal",
+                direction:
+                  selectedSubtitle.language === "Arabic" ? "rtl" : "ltr",
+                textAlign:
+                  selectedSubtitle.language === "Arabic" ? "right" : "center",
+                unicodeBidi: "embed",
+                fontFamily:
+                  selectedSubtitle.language === "Arabic"
+                    ? "'Noto Sans Arabic', 'Arial Unicode MS', 'Tahoma', sans-serif"
+                    : "inherit",
+              }}
+            >
+              {currentSubtitleText.split("\n").map((line, index) => (
+                <div
+                  key={index}
+                  style={{
+                    direction:
+                      selectedSubtitle.language === "Arabic" ? "rtl" : "ltr",
+                    textAlign:
+                      selectedSubtitle.language === "Arabic"
+                        ? "right"
+                        : "center",
+                  }}
+                >
+                  {line}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Controls */}
       <div
-        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
-          }`}
+        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
       >
         {/* Progress Bar */}
         <div className="mb-4">
@@ -380,8 +661,9 @@ const VideoPlayer: React.FC = () => {
             onChange={handleSeek}
             className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
             style={{
-              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(currentTime / duration) * 100
-                }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
+              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${
+                (currentTime / duration) * 100
+              }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
             }}
           />
           <div className="flex justify-between text-white text-sm mt-1">
@@ -416,6 +698,51 @@ const VideoPlayer: React.FC = () => {
                 onChange={handleVolumeChange}
                 className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
               />
+            </div>
+
+            {/* Subtitle Button */}
+            <div className="relative subtitle-menu">
+              <button
+                onClick={toggleSubtitleMenu}
+                className={`text-white hover:text-red-500 transition ${
+                  selectedSubtitle ? "text-red-500" : ""
+                }`}
+                title="Subtitles"
+              >
+                <FaClosedCaptioning />
+              </button>
+
+              {/* Subtitle Menu */}
+              {showSubtitleMenu && (
+                <div className="absolute bottom-full mb-2 right-0 bg-black/90 rounded-lg p-2 min-w-48 max-h-60 overflow-y-auto">
+                  <div className="text-white text-sm font-semibold mb-2 px-2">
+                    Subtitles
+                  </div>
+                  <button
+                    onClick={() => handleSubtitleSelect(null)}
+                    className={`block w-full text-left px-2 py-1 text-sm rounded transition ${
+                      !selectedSubtitle
+                        ? "bg-red-500 text-white"
+                        : "text-gray-300 hover:bg-gray-700"
+                    }`}
+                  >
+                    Off
+                  </button>
+                  {subtitles.map((subtitle) => (
+                    <button
+                      key={subtitle.id}
+                      onClick={() => handleSubtitleSelect(subtitle)}
+                      className={`block w-full text-left px-2 py-1 text-sm rounded transition ${
+                        selectedSubtitle?.id === subtitle.id
+                          ? "bg-red-500 text-white"
+                          : "text-gray-300 hover:bg-gray-700"
+                      }`}
+                    >
+                      {subtitle.language}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

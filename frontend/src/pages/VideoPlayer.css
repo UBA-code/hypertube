@@ -1,0 +1,26 @@
+/* Custom subtitle styling */
+video::cue {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 18px;
+  font-weight: normal;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+video::-webkit-media-text-track-container {
+  position: relative;
+  bottom: 60px; /* Adjust to avoid overlapping with controls */
+}
+
+video::-webkit-media-text-track-display {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 18px;
+  font-weight: normal;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-bottom: 60px;
+}
