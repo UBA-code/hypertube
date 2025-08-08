@@ -227,8 +227,10 @@ export class TorrentService {
       if (['.mp4', '.webm'].includes(fileExtension)) {
         ffmpegCommand = ffmpeg(videoStream)
           .addOptions([
-            '-sn', // Skip subtitles
-            '-c copy', // Copy without re-encoding
+            '-sn',
+            '-c:v libx264',
+            '-c:a aac',
+            '-preset veryfast',
             '-f hls',
             '-hls_time 4',
             '-hls_list_size 0',
@@ -266,29 +268,7 @@ export class TorrentService {
 
       // Fallback to re-encoding if copy fails
       ffmpegCommand.on('error', () => {
-        try {
-          this.logger.error('Copy failed, retrying with re-encoding...');
-
-          const fallbackCommand = ffmpeg(videoStream)
-            .addOptions([
-              '-sn',
-              '-c:v libx264',
-              '-c:a aac',
-              '-preset veryfast',
-              '-f hls',
-              '-hls_time 4',
-              '-hls_list_size 0',
-              '-hls_flags independent_segments',
-              '-hls_segment_filename',
-              segmentPattern,
-            ])
-            .output(playlistPath);
-
-          fallbackCommand.run();
-        } catch (error) {
-          this.logger.error('Fallback re-encoding failed:', error);
-          throw new Error('HLS conversion failed.');
-        }
+        throw new Error('HLS conversion failed.');
       });
 
       // Start the conversion
