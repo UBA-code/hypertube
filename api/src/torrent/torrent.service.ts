@@ -234,14 +234,16 @@ export class TorrentService {
       const videoStream = videoFile.createReadStream();
       const fileExtension = extname(videoFile.name);
       let ffmpegCommand: ffmpeg.FfmpegCommand;
+      // Check if we can copy streams without transcoding
+      // const canCopyStreams = await this.canCopyStreamsForHls(videoFile);
 
-      if (['.mp4', '.webm'].includes(fileExtension)) {
+      if (fileExtension === '.mp4') {
+        this.logger.debug(
+          `Using stream copy for ${fileExtension} file - no transcoding needed`,
+        );
         ffmpegCommand = ffmpeg(videoStream)
           .addOptions([
-            '-sn',
-            '-c:v libx264',
-            '-c:a aac',
-            '-preset veryfast',
+            '-c copy', // Copy streams without re-encoding
             '-f hls',
             '-hls_time 4',
             '-hls_list_size 0',
@@ -250,7 +252,27 @@ export class TorrentService {
             segmentPattern,
           ])
           .output(playlistPath);
-      } else if (['.mkv'].includes(fileExtension)) {
+      }
+      // else if (['.mp4', '.webm'].includes(fileExtension)) {
+      //   this.logger.log(`Transcoding ${fileExtension} file to HLS format`);
+      //   ffmpegCommand = ffmpeg(videoStream)
+      //     .addOptions([
+      //       '-sn',
+      //       '-c:v libx264',
+      //       '-c:a aac',
+      //       '-preset veryfast',
+      //       '-f hls',
+      //       '-hls_time 4',
+      //       '-hls_list_size 0',
+      //       '-hls_flags independent_segments',
+      //       '-hls_segment_filename',
+      //       segmentPattern,
+      //     ])
+      //     .output(playlistPath);
+      // }
+      // else if (['.mkv'].includes(fileExtension)) {
+      else {
+        this.logger.log(`Transcoding  ${fileExtension} file to HLS format`);
         // Setup FFmpeg conversion
         ffmpegCommand = this.getFFmpegMkvConversionCommand(
           videoStream,
@@ -258,6 +280,14 @@ export class TorrentService {
           playlistPath,
         );
       }
+      // else {
+      //   this.logger.error(
+      //     `Unsupported file type: ${fileExtension}. Only .mp4, .mkv, and .webm files are supported.`,
+      //   );
+      //   throw new BadRequestException(
+      //     `Unsupported file type: ${fileExtension}. Only .mp4, .mkv, and .webm files are supported.`,
+      //   );
+      // }
 
       // Handle FFmpeg events
       ffmpegCommand.on('start', (commandLine) => {
@@ -455,6 +485,51 @@ export class TorrentService {
         (first, second) =>
           parseInt(second.replace('p', '')) - parseInt(first.replace('p', '')),
       )
-      .reverse();
+      .reverse()
+      .filter((quality, index, self) => self.indexOf(quality) === index);
+  }
+
+  async canCopyStreamsForHls(videoFile: any): Promise<boolean> {
+    return await new Promise((resolve) => {
+      const videoStream = videoFile.createReadStream();
+
+      ffmpeg.ffprobe(videoStream, (err, metadata) => {
+        if (err) {
+          this.logger.warn(`Failed to probe video file: ${err.message}`);
+          resolve(false);
+          return;
+        }
+
+        const videoStream = metadata.streams.find(
+          (s) => s.codec_type === 'video',
+        );
+        const audioStream = metadata.streams.find(
+          (s) => s.codec_type === 'audio',
+        );
+
+        // Check if video codec is H.264 and audio codec is AAC
+        const isVideoCompatible = videoStream?.codec_name === 'h264';
+        const isAudioCompatible = audioStream?.codec_name === 'aac';
+
+        // Check if video is baseline profile (most compatible)
+        const profileValue =
+          typeof videoStream?.profile === 'string'
+            ? videoStream?.profile
+            : String(videoStream?.profile);
+
+        const isBaselineProfile =
+          profileValue === 'Baseline' ||
+          profileValue === 'Constrained Baseline';
+
+        const isCompatible =
+          isVideoCompatible && isAudioCompatible && isBaselineProfile;
+
+        this.logger.log(
+          `Video compatibility check: Video=${isVideoCompatible}, Audio=${isAudioCompatible}, Profile=${isBaselineProfile}`,
+        );
+
+        resolve(isCompatible);
+      });
+    });
   }
 }
