@@ -12,6 +12,7 @@ import Torrent from 'src/movies/entities/torrent.entity';
 import { Repository } from 'typeorm';
 import * as pump from 'pump';
 import createStreamResponseDto from './interfaces/responses';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class TorrentService {
@@ -19,6 +20,7 @@ export class TorrentService {
 
   constructor(
     private moviesService: MoviesService,
+    private usersService: UsersService,
     @InjectRepository(Torrent) private torrentRepository: Repository<Torrent>,
   ) {}
 
@@ -31,12 +33,20 @@ export class TorrentService {
   async createStream(
     imdbId: string,
     quality: string,
+    userId: number,
   ): Promise<createStreamResponseDto> {
     try {
       const movie = await this.moviesService.findMovieBy({
         where: { imdbId },
         relations: ['torrents'],
       });
+      const user = await this.usersService.findOne({
+        where: { id: userId },
+        relations: ['watchedMovies'],
+      });
+
+      user.watchedMovies.push(movie);
+      await this.usersService.saveUser(user);
 
       if (!movie) {
         throw new NotFoundException('Movie not found');
@@ -72,6 +82,7 @@ export class TorrentService {
       );
 
       torrent.hlsPlaylistPath = playlistPath;
+      torrent.lastWatched = new Date();
       await this.moviesService.save(movie);
 
       await new Promise((resolve) => {

@@ -76,9 +76,6 @@ export default class Movie {
   })
   comments: Comment[];
 
-  @Column({ nullable: true })
-  lastWatched: Date;
-
   @ManyToMany(() => User, (user) => user.watchedMovies)
   usersWatched: User[];
 
