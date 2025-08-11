@@ -9,10 +9,12 @@ import { scrapTorrentLinks } from './helpers/scrapTorrentLinks';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { InjectRepository } from '@nestjs/typeorm';
 import Torrent from 'src/movies/entities/torrent.entity';
-import { Repository } from 'typeorm';
+import { LessThanOrEqual, Repository } from 'typeorm';
 import * as pump from 'pump';
 import createStreamResponseDto from './interfaces/responses';
 import { UsersService } from 'src/users/users.service';
+import { Cron } from '@nestjs/schedule';
+import { rm } from 'fs/promises';
 
 @Injectable()
 export class TorrentService {
@@ -65,6 +67,8 @@ export class TorrentService {
         this.logger.log(
           `Torrent already downloaded: ${torrent.hlsPlaylistPath}`,
         );
+        torrent.lastWatched = new Date();
+        await this.moviesService.save(movie);
         return {
           success: true,
           movieId: movie.imdbId,
@@ -173,7 +177,9 @@ export class TorrentService {
       this.logger.log(
         `Downloading torrent from: ${isMagnet ? magnetUrl : 'buffer'}`,
       );
-      const engine = torrentStream(isMagnet ? magnetUrl : buffer);
+      const engine = torrentStream(isMagnet ? magnetUrl : buffer, {
+        path: join('/tmp/torrents', movie.imdbId, quality),
+      });
 
       engine.on('ready', async () => {
         engine.files.forEach((file) => file.deselect());
@@ -531,5 +537,43 @@ export class TorrentService {
         resolve(isCompatible);
       });
     });
+  }
+
+  @Cron('0 0 * * *')
+  async deleteUnwantedTorrents() {
+    this.logger.log('cron called');
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const oldTorrents = await this.torrentRepository.find({
+      where: {
+        lastWatched: LessThanOrEqual(oneMonthAgo),
+      },
+      relations: ['movie'],
+    });
+    await Promise.all(
+      oldTorrents.map(async (torrent) => {
+        try {
+          const dirToDelete = torrent.hlsPlaylistPath
+            .split('/')
+            .slice(0, -1)
+            .join('/');
+
+          this.logger.log(`Deleting torrent movie ${dirToDelete}`);
+          await rm(dirToDelete, { recursive: true, force: true });
+          await rm(
+            join('/tmp/torrents', torrent.movie.imdbId, torrent.quality),
+            { recursive: true, force: true },
+          );
+          torrent.downloadStatus = 'not_started';
+          torrent.lastWatched = null;
+          torrent.hlsPlaylistPath = null;
+          this.logger.log(`Deleted torrent ${torrent.id} successfully`);
+        } catch (err) {
+          this.logger.error(`Failed to delete torrent ${torrent.id}`);
+          this.logger.error(err);
+        }
+      }),
+    );
+    await this.torrentRepository.save(oldTorrents);
   }
 }

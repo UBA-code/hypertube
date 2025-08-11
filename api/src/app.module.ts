@@ -20,6 +20,7 @@ import { RevokedTokensModule } from './revoked-tokens/revoked-tokens.module';
 import { CommentsModule } from './comments/comments.module';
 import { TorrentModule } from './torrent/torrent.module';
 import Producer from './movies/entities/Producer.entity';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -46,12 +47,13 @@ import Producer from './movies/entities/Producer.entity';
       logging: false,
       autoLoadEntities: true,
     }),
-    AuthModule,
-    UsersModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
+    ScheduleModule.forRoot(),
+    AuthModule,
+    UsersModule,
     MoviesModule,
     RevokedTokensModule,
     CommentsModule,
