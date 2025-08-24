@@ -1,67 +1,75 @@
-import React from "react";
-import { FaPlay } from "react-icons/fa";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaPlay, FaStar } from "react-icons/fa";
 import { RiMovie2Line } from "react-icons/ri";
-
-interface Movie {
-  imdbId: string;
-  title: string;
-  year: number;
-  coverImage?: string;
-  genres: string[];
-  duration?: number;
-  isFavorite: boolean;
-}
+import type { WatchedMovie } from "../types/movie";
 
 interface WatchedMovieItemProps {
-  movie: Movie;
+  movie: WatchedMovie;
 }
 
 const WatchedMovieItem: React.FC<WatchedMovieItemProps> = ({ movie }) => {
-  const progress = Math.floor(Math.random() * 60) + 40;
+  const [imageError, setImageError] = useState(false);
+  const navigate = useNavigate();
+
+  // Handle play button click to navigate to movie details page
+  const handlePlayClick = () => {
+    navigate(`/movies/${movie.imdbId}`);
+  };
 
   return (
-    <div className="flex items-center bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition">
-      <div className="w-24 h-24 flex-shrink-0">
-        {movie.coverImage ? (
+    <div
+      className="flex items-center bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition cursor-pointer"
+      onClick={handlePlayClick}
+    >
+      <div className="w-32 h-48 flex-shrink-0">
+        {!imageError ? (
           <img
             src={movie.coverImage}
             alt={movie.title}
             className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-            <RiMovie2Line className="text-2xl text-gray-500" />
+            <RiMovie2Line className="text-3xl text-gray-500" />
           </div>
         )}
       </div>
 
       <div className="flex-1 p-4">
-        <div className="flex justify-between">
-          <h3 className="font-bold">{movie.title}</h3>
-          <span className="text-gray-400">
-            {movie.duration
-              ? `${Math.floor(movie.duration / 60)}h ${movie.duration % 60}m`
-              : "2h 15m"}
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="font-bold text-lg">{movie.title}</h3>
+          <span className="text-gray-400 text-sm">
+            {Math.floor(movie.duration / 60)}h {movie.duration % 60}m
           </span>
         </div>
 
-        <div className="text-sm text-gray-400 mb-2">
-          {movie.genres.slice(0, 3).join(", ")} • {movie.year}
+        <div className="flex items-center mb-2">
+          <FaStar className="text-yellow-500 mr-1" />
+          <span className="text-sm text-gray-300 mr-4">
+            {movie.imdbRating}/10
+          </span>
+          <span className="text-sm text-gray-400">({movie.year})</span>
         </div>
 
-        <div className="flex items-center">
-          <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
-            <div
-              className="h-full bg-red-500"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <span className="text-sm">{progress}%</span>
-        </div>
+        <p
+          className="text-sm text-gray-400 overflow-hidden"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical" as const,
+          }}
+        >
+          {movie.synopsis}
+        </p>
       </div>
 
-      <button className="mr-4 w-10 h-10 bg-gradient-to-r from-red-600 to-purple-600 rounded-full flex items-center justify-center hover:opacity-90 transition">
-        <FaPlay className="ml-1" />
+      <button
+        onClick={handlePlayClick}
+        className="mr-4 w-12 h-12 bg-gradient-to-r from-red-600 to-purple-600 rounded-full flex items-center justify-center hover:opacity-90 transition"
+      >
+        <FaPlay className="ml-1 text-lg" />
       </button>
     </div>
   );

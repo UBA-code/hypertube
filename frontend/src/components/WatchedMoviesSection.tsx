@@ -2,20 +2,11 @@ import React from "react";
 import { FaHistory } from "react-icons/fa";
 import { MdLocalMovies } from "react-icons/md";
 import WatchedMovieItem from "./WatchedMovieItem";
-
-interface Movie {
-  imdbId: string;
-  title: string;
-  year: number;
-  coverImage?: string;
-  genres: string[];
-  duration?: number;
-  isFavorite: boolean;
-}
+import type { WatchedMovie } from "../types/movie";
 
 interface WatchedMoviesSectionProps {
   activeTab: string;
-  watchedMovies: Movie[];
+  watchedMovies: WatchedMovie[];
 }
 
 const WatchedMoviesSection: React.FC<WatchedMoviesSectionProps> = ({
@@ -42,7 +33,7 @@ const WatchedMoviesSection: React.FC<WatchedMoviesSectionProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {watchedMovies.map((movie) => (
             <WatchedMovieItem key={movie.imdbId} movie={movie} />
           ))}

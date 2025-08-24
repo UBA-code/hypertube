@@ -47,6 +47,9 @@ import { ScheduleModule } from '@nestjs/schedule';
       logging: false,
       autoLoadEntities: true,
     }),
+    ScheduleModule.forRoot(),
+    AuthModule,
+    UsersModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',

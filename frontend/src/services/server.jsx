@@ -235,13 +235,27 @@ export const getPopularMovies = async (page = 1) => {
   }
 };
 
-export const getWatchedMovies = () => {
-  return new Promise((resolve) => {
-    // Simulate network delay
-    setTimeout(() => {
-      resolve([...mockMovies.slice(0, 3)]);
-    }, 1200);
-  });
+export const getWatchedMovies = async () => {
+  try {
+    const response = await fetch("http://localhost:3000/movies/watchedMovies", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // Include cookies for authentication
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch watched movies: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching watched movies:", error);
+    // Return empty array on error to prevent crashes
+    return [];
+  }
 };
 
 export const getCurrentUser = () => {
