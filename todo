@@ -1,2 +1,15 @@
+## backend
+
 do a validation to images
 user can only set movie as watch to itself
+prevent unnecessary transcoding
+set priority to first pieces
+42 auth not work when a torrent is being downloaded
+
+## client
+
+forget password
+edit user info
+watch history
+show is watched in library and detailed movie
+add the new auth strategies (gitlab, discord)

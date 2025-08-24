@@ -30,6 +30,9 @@ export default class Torrent {
   })
   downloadStatus: 'completed' | 'downloading' | 'not_started';
 
+  @Column({ nullable: true })
+  lastWatched: Date;
+
   @ManyToOne(() => Movie, (movie) => movie.torrents)
   movie: Movie;
 }

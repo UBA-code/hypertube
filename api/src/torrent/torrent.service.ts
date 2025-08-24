@@ -9,9 +9,12 @@ import { scrapTorrentLinks } from './helpers/scrapTorrentLinks';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { InjectRepository } from '@nestjs/typeorm';
 import Torrent from 'src/movies/entities/torrent.entity';
-import { Repository } from 'typeorm';
+import { LessThanOrEqual, Repository } from 'typeorm';
 import * as pump from 'pump';
 import createStreamResponseDto from './interfaces/responses';
+import { UsersService } from 'src/users/users.service';
+import { Cron } from '@nestjs/schedule';
+import { rm } from 'fs/promises';
 
 @Injectable()
 export class TorrentService {
@@ -19,6 +22,7 @@ export class TorrentService {
 
   constructor(
     private moviesService: MoviesService,
+    private usersService: UsersService,
     @InjectRepository(Torrent) private torrentRepository: Repository<Torrent>,
   ) {}
 
@@ -31,12 +35,20 @@ export class TorrentService {
   async createStream(
     imdbId: string,
     quality: string,
+    userId: number,
   ): Promise<createStreamResponseDto> {
     try {
       const movie = await this.moviesService.findMovieBy({
         where: { imdbId },
         relations: ['torrents'],
       });
+      const user = await this.usersService.findOne({
+        where: { id: userId },
+        relations: ['watchedMovies'],
+      });
+
+      user.watchedMovies.push(movie);
+      await this.usersService.saveUser(user);
 
       if (!movie) {
         throw new NotFoundException('Movie not found');
@@ -55,6 +67,8 @@ export class TorrentService {
         this.logger.log(
           `Torrent already downloaded: ${torrent.hlsPlaylistPath}`,
         );
+        torrent.lastWatched = new Date();
+        await this.moviesService.save(movie);
         return {
           success: true,
           movieId: movie.imdbId,
@@ -72,6 +86,7 @@ export class TorrentService {
       );
 
       torrent.hlsPlaylistPath = playlistPath;
+      torrent.lastWatched = new Date();
       await this.moviesService.save(movie);
 
       await new Promise((resolve) => {
@@ -162,7 +177,9 @@ export class TorrentService {
       this.logger.log(
         `Downloading torrent from: ${isMagnet ? magnetUrl : 'buffer'}`,
       );
-      const engine = torrentStream(isMagnet ? magnetUrl : buffer);
+      const engine = torrentStream(isMagnet ? magnetUrl : buffer, {
+        path: join('/tmp/torrents', movie.imdbId, quality),
+      });
 
       engine.on('ready', async () => {
         engine.files.forEach((file) => file.deselect());
@@ -223,12 +240,16 @@ export class TorrentService {
       const videoStream = videoFile.createReadStream();
       const fileExtension = extname(videoFile.name);
       let ffmpegCommand: ffmpeg.FfmpegCommand;
+      // Check if we can copy streams without transcoding
+      // const canCopyStreams = await this.canCopyStreamsForHls(videoFile);
 
-      if (['.mp4', '.webm'].includes(fileExtension)) {
+      if (fileExtension === '.mp4') {
+        this.logger.debug(
+          `Using stream copy for ${fileExtension} file - no transcoding needed`,
+        );
         ffmpegCommand = ffmpeg(videoStream)
           .addOptions([
-            '-sn', // Skip subtitles
-            '-c copy', // Copy without re-encoding
+            '-c copy', // Copy streams without re-encoding
             '-f hls',
             '-hls_time 4',
             '-hls_list_size 0',
@@ -237,7 +258,27 @@ export class TorrentService {
             segmentPattern,
           ])
           .output(playlistPath);
-      } else if (['.mkv'].includes(fileExtension)) {
+      }
+      // else if (['.mp4', '.webm'].includes(fileExtension)) {
+      //   this.logger.log(`Transcoding ${fileExtension} file to HLS format`);
+      //   ffmpegCommand = ffmpeg(videoStream)
+      //     .addOptions([
+      //       '-sn',
+      //       '-c:v libx264',
+      //       '-c:a aac',
+      //       '-preset veryfast',
+      //       '-f hls',
+      //       '-hls_time 4',
+      //       '-hls_list_size 0',
+      //       '-hls_flags independent_segments',
+      //       '-hls_segment_filename',
+      //       segmentPattern,
+      //     ])
+      //     .output(playlistPath);
+      // }
+      // else if (['.mkv'].includes(fileExtension)) {
+      else {
+        this.logger.log(`Transcoding  ${fileExtension} file to HLS format`);
         // Setup FFmpeg conversion
         ffmpegCommand = this.getFFmpegMkvConversionCommand(
           videoStream,
@@ -245,6 +286,14 @@ export class TorrentService {
           playlistPath,
         );
       }
+      // else {
+      //   this.logger.error(
+      //     `Unsupported file type: ${fileExtension}. Only .mp4, .mkv, and .webm files are supported.`,
+      //   );
+      //   throw new BadRequestException(
+      //     `Unsupported file type: ${fileExtension}. Only .mp4, .mkv, and .webm files are supported.`,
+      //   );
+      // }
 
       // Handle FFmpeg events
       ffmpegCommand.on('start', (commandLine) => {
@@ -266,29 +315,7 @@ export class TorrentService {
 
       // Fallback to re-encoding if copy fails
       ffmpegCommand.on('error', () => {
-        try {
-          this.logger.error('Copy failed, retrying with re-encoding...');
-
-          const fallbackCommand = ffmpeg(videoStream)
-            .addOptions([
-              '-sn',
-              '-c:v libx264',
-              '-c:a aac',
-              '-preset veryfast',
-              '-f hls',
-              '-hls_time 4',
-              '-hls_list_size 0',
-              '-hls_flags independent_segments',
-              '-hls_segment_filename',
-              segmentPattern,
-            ])
-            .output(playlistPath);
-
-          fallbackCommand.run();
-        } catch (error) {
-          this.logger.error('Fallback re-encoding failed:', error);
-          throw new Error('HLS conversion failed.');
-        }
+        throw new Error('HLS conversion failed.');
       });
 
       // Start the conversion
@@ -464,6 +491,89 @@ export class TorrentService {
         (first, second) =>
           parseInt(second.replace('p', '')) - parseInt(first.replace('p', '')),
       )
-      .reverse();
+      .reverse()
+      .filter((quality, index, self) => self.indexOf(quality) === index);
+  }
+
+  async canCopyStreamsForHls(videoFile: any): Promise<boolean> {
+    return await new Promise((resolve) => {
+      const videoStream = videoFile.createReadStream();
+
+      ffmpeg.ffprobe(videoStream, (err, metadata) => {
+        if (err) {
+          this.logger.warn(`Failed to probe video file: ${err.message}`);
+          resolve(false);
+          return;
+        }
+
+        const videoStream = metadata.streams.find(
+          (s) => s.codec_type === 'video',
+        );
+        const audioStream = metadata.streams.find(
+          (s) => s.codec_type === 'audio',
+        );
+
+        // Check if video codec is H.264 and audio codec is AAC
+        const isVideoCompatible = videoStream?.codec_name === 'h264';
+        const isAudioCompatible = audioStream?.codec_name === 'aac';
+
+        // Check if video is baseline profile (most compatible)
+        const profileValue =
+          typeof videoStream?.profile === 'string'
+            ? videoStream?.profile
+            : String(videoStream?.profile);
+
+        const isBaselineProfile =
+          profileValue === 'Baseline' ||
+          profileValue === 'Constrained Baseline';
+
+        const isCompatible =
+          isVideoCompatible && isAudioCompatible && isBaselineProfile;
+
+        this.logger.log(
+          `Video compatibility check: Video=${isVideoCompatible}, Audio=${isAudioCompatible}, Profile=${isBaselineProfile}`,
+        );
+
+        resolve(isCompatible);
+      });
+    });
+  }
+
+  @Cron('0 0 * * *')
+  async deleteUnwantedTorrents() {
+    this.logger.log('cron called');
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const oldTorrents = await this.torrentRepository.find({
+      where: {
+        lastWatched: LessThanOrEqual(oneMonthAgo),
+      },
+      relations: ['movie'],
+    });
+    await Promise.all(
+      oldTorrents.map(async (torrent) => {
+        try {
+          const dirToDelete = torrent.hlsPlaylistPath
+            .split('/')
+            .slice(0, -1)
+            .join('/');
+
+          this.logger.log(`Deleting torrent movie ${dirToDelete}`);
+          await rm(dirToDelete, { recursive: true, force: true });
+          await rm(
+            join('/tmp/torrents', torrent.movie.imdbId, torrent.quality),
+            { recursive: true, force: true },
+          );
+          torrent.downloadStatus = 'not_started';
+          torrent.lastWatched = null;
+          torrent.hlsPlaylistPath = null;
+          this.logger.log(`Deleted torrent ${torrent.id} successfully`);
+        } catch (err) {
+          this.logger.error(`Failed to delete torrent ${torrent.id}`);
+          this.logger.error(err);
+        }
+      }),
+    );
+    await this.torrentRepository.save(oldTorrents);
   }
 }

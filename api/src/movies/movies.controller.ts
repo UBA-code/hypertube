@@ -123,6 +123,12 @@ export class MoviesController {
     return await this.moviesService.search(user['id'], '', page, sort, genre);
   }
 
+  @Get('watchedMovies')
+  async getWatchedMovies(@Req() req: Request) {
+    const user = req['user'];
+    return await this.moviesService.getWatchedMovies(user['id']);
+  }
+
   @Get(':imdbId')
   @ApiOperation({ summary: 'Get movie details by imdbId or tmdbId' })
   @ApiParam({
@@ -143,15 +149,6 @@ export class MoviesController {
       req['user']['id'],
       imdbId,
     );
-  }
-
-  @Post('watched')
-  async markAsWatched(@Req() req: Request, @Body('imdbId') imdbId: string) {
-    const user = req['user'];
-    await this.moviesService.markAsWatched(user['id'], imdbId);
-    return {
-      message: 'Movie is marked as watched',
-    };
   }
 
   @Post('favorite/:imdbId')

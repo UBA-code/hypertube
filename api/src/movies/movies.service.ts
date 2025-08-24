@@ -235,7 +235,7 @@ export class MoviesService {
   ): Promise<MoviesSearchResponse> {
     const user = await this.usersService.findOne({
       where: { id: userId },
-      relations: ['favoriteMovies'],
+      relations: ['favoriteMovies', 'watchedMovies'],
     });
     const ytsSearchResult = await this.getYtsSearchResult(
       userId,
@@ -275,6 +275,9 @@ export class MoviesService {
           (favMovie) =>
             favMovie.title === movie.title && favMovie.year === movie.year,
         );
+        movie.isWatched = user.watchedMovies.some(
+          (watchedMovie) => watchedMovie.imdbId === movie.imdbId,
+        );
         return movie;
       });
 
@@ -304,6 +307,7 @@ export class MoviesService {
       await this.saveAndReturnMovie(userId, imdbId),
     );
     movieDto.isFavorite = await this.isFavoriteMovie(userId, movieDto.imdbId);
+    movieDto.isWatched = await this.isWatchedMovie(userId, movieDto.imdbId);
     return movieDto;
   }
 
@@ -474,61 +478,6 @@ export class MoviesService {
     }
   }
 
-  async markAsWatched(userId: number, imdbId: string) {
-    try {
-      const user = await this.usersService.findOne({
-        where: { id: userId },
-        relations: ['watchedMovies'],
-      });
-      let movie = await this.movieRepository.findOne({
-        where: { imdbId },
-      });
-
-      if (!movie) {
-        const searchedMovie: YtsDetailedMovie = (
-          await axios.get('https://yts.mx/api/v2/movie_details.json', {
-            params: {
-              imdb_id: imdbId,
-              with_case: true,
-            },
-          })
-        ).data.data.movie;
-        movie = new Movie();
-
-        movie.title = searchedMovie.title;
-        movie.year = searchedMovie.year;
-        movie.imdbRating = 1;
-        movie.imdbId = searchedMovie.imdb_code;
-        movie.genres = await Promise.all(
-          searchedMovie.genres.map(async (genre) => {
-            let existingGenre: Genre = await this.genreRepository.findOneBy({
-              name: genre,
-            });
-            if (!existingGenre) {
-              existingGenre = new Genre();
-              existingGenre.name = genre;
-            }
-
-            return existingGenre;
-          }),
-        );
-        movie.duration = searchedMovie.runtime;
-        movie.synopsis = searchedMovie.description_full;
-        movie.coverImage = searchedMovie.medium_cover_image;
-      }
-
-      if (!user.watchedMovies.some((m) => m.imdbId === movie.imdbId)) {
-        user.watchedMovies.push(movie);
-        await this.usersService.saveUser(user);
-        console.log('new movie has been aded to the db');
-      }
-      return user;
-    } catch (error) {
-      console.error('Error fetching movie details:', error);
-      return null;
-    }
-  }
-
   async saveMovie(movie: MovieDto): Promise<Movie> {
     const newMovie = this.movieRepository.create({
       title: movie.title,
@@ -551,7 +500,6 @@ export class MoviesService {
       })),
       subtitles: [],
       comments: [],
-      lastWatched: null,
       usersWatched: [],
     });
     return await this.movieRepository.save(newMovie);
@@ -608,7 +556,6 @@ export class MoviesService {
       })),
       subtitles: movie.subtitles,
       comments: movie.comments,
-      lastWatched: movie.lastWatched,
       isFavorite: false, // This will be set later based on user data
     };
   }
@@ -622,6 +569,17 @@ export class MoviesService {
     if (!user) throw new NotFoundException(`User with id ${userId} not found`);
 
     return user.favoriteMovies.some((movie) => movie.imdbId === movieId);
+  }
+
+  async isWatchedMovie(userId: number, imdbId: string): Promise<boolean> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['watchedMovies'],
+    });
+
+    if (!user) throw new NotFoundException(`User with id ${userId} not found`);
+
+    return user.watchedMovies.some((movie) => movie.imdbId === imdbId);
   }
 
   async getFavoritesMovies(userId: number) {
@@ -675,5 +633,18 @@ export class MoviesService {
       await this.movieRepository.save(movie);
     }
     return plainToInstance(SubtitleDto, movie.subtitles);
+  }
+
+  async getWatchedMovies(userId: number): Promise<Movie[]> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['watchedMovies'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    return user.watchedMovies;
   }
 }

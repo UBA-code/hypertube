@@ -51,7 +51,7 @@ export async function scrapSubtitles(movieId: string): Promise<SubtitleDto[]> {
         index === self.findIndex((s) => s.language === sub.language),
     );
     const subtitlesWithDirectLinks = await Promise.all(
-      unDuplicatedSubs.map((sub) => getSpecificSubtitleLink(sub)),
+      unDuplicatedSubs.map(async (sub) => await getSpecificSubtitleLink(sub)),
     );
 
     return subtitlesWithDirectLinks.filter(Boolean);

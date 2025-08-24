@@ -5,10 +5,11 @@ import {
   Header,
   Param,
   Query,
+  Req,
   Res,
 } from '@nestjs/common';
 import { TorrentService } from './torrent.service';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { SkipAuth } from 'src/auth/decorators/skip-auth.decorator';
 import createStreamResponseDto from './interfaces/responses';
 
@@ -20,6 +21,7 @@ export class TorrentController {
   async getTorrentStream(
     @Param('imdbId') imdbId: string,
     @Query('quality') quality: string,
+    @Req() req: Request,
   ): Promise<createStreamResponseDto> {
     console.log(
       `Fetching torrent stream for IMDB ID: ${imdbId}, Quality: ${quality}`,
@@ -27,7 +29,11 @@ export class TorrentController {
     if (!imdbId || !quality) {
       throw new BadRequestException('IMDB ID and quality are required');
     }
-    return await this.torrentService.createStream(imdbId, quality);
+    return await this.torrentService.createStream(
+      imdbId,
+      quality,
+      req.user['id'],
+    );
   }
 
   @SkipAuth()
