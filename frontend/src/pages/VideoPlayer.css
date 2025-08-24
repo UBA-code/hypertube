@@ -24,3 +24,17 @@ video::-webkit-media-text-track-display {
   border-radius: 3px;
   margin-bottom: 60px;
 }
+
+/* RTL (Right-to-Left) text support for Arabic and other RTL languages */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Ensure proper Arabic text rendering */
+.arabic-text {
+  font-family: "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", sans-serif;
+  unicode-bidi: embed;
+  direction: rtl;
+  text-align: right;
+}

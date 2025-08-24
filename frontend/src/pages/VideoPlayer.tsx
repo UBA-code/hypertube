@@ -418,13 +418,223 @@ const VideoPlayer: React.FC = () => {
         throw new Error(`Failed to fetch subtitle: ${response.status}`);
       }
 
-      // For Arabic and other special languages, ensure proper text handling
       let srtContent: string;
+
       if (subtitle.language === "Arabic") {
-        // Handle Arabic encoding explicitly
+        // For Arabic, try multiple encoding methods
         const arrayBuffer = await response.arrayBuffer();
-        const decoder = new TextDecoder("utf-8");
-        srtContent = decoder.decode(arrayBuffer);
+
+        // Try different encodings for Arabic
+        const encodings = ["utf-8", "windows-1256", "iso-8859-6"];
+        let decodedContent = "";
+        let bestEncoding = "utf-8";
+
+        for (const encoding of encodings) {
+          try {
+            const decoder = new TextDecoder(encoding, { fatal: false });
+            const testContent = decoder.decode(arrayBuffer);
+
+            console.log(`Testing ${encoding}:`, testContent.substring(0, 100));
+
+            // Check if the content contains valid Arabic characters
+            const arabicRegex = /[\u0600-\u06FF]/;
+            const hasQuestionMarks =
+              testContent.includes("?") || testContent.includes("�");
+
+            if (arabicRegex.test(testContent) && !hasQuestionMarks) {
+              decodedContent = testContent;
+              bestEncoding = encoding;
+              console.log(
+                `Arabic subtitles decoded successfully with ${encoding}`
+              );
+              break;
+            }
+          } catch (e) {
+            console.warn(`Failed to decode with ${encoding}:`, e);
+          }
+        }
+
+        // If no encoding worked perfectly, try windows-1256 specifically for Arabic
+        if (!decodedContent || decodedContent.includes("�")) {
+          try {
+            console.log(
+              "Trying windows-1256 manual conversion as last resort..."
+            );
+            const uint8Array = new Uint8Array(arrayBuffer);
+            let windows1256Content = "";
+
+            // Windows-1256 to Unicode mapping for Arabic characters
+            const windows1256Map: { [key: number]: string } = {
+              0x80: "\u20AC",
+              0x81: "\u067E",
+              0x82: "\u201A",
+              0x83: "\u0192",
+              0x84: "\u201E",
+              0x85: "\u2026",
+              0x86: "\u2020",
+              0x87: "\u2021",
+              0x88: "\u02C6",
+              0x89: "\u2030",
+              0x8a: "\u0679",
+              0x8b: "\u2039",
+              0x8c: "\u0152",
+              0x8d: "\u0686",
+              0x8e: "\u0698",
+              0x8f: "\u0688",
+              0x90: "\u06AF",
+              0x91: "\u2018",
+              0x92: "\u2019",
+              0x93: "\u201C",
+              0x94: "\u201D",
+              0x95: "\u2022",
+              0x96: "\u2013",
+              0x97: "\u2014",
+              0x98: "\u06A9",
+              0x99: "\u2122",
+              0x9a: "\u0691",
+              0x9b: "\u203A",
+              0x9c: "\u0153",
+              0x9d: "\u200C",
+              0x9e: "\u200D",
+              0x9f: "\u06BA",
+              0xa0: "\u00A0",
+              0xa1: "\u060C",
+              0xa2: "\u00A2",
+              0xa3: "\u00A3",
+              0xa4: "\u00A4",
+              0xa5: "\u00A5",
+              0xa6: "\u00A6",
+              0xa7: "\u00A7",
+              0xa8: "\u00A8",
+              0xa9: "\u00A9",
+              0xaa: "\u06BE",
+              0xab: "\u00AB",
+              0xac: "\u00AC",
+              0xad: "\u00AD",
+              0xae: "\u00AE",
+              0xaf: "\u00AF",
+              0xb0: "\u00B0",
+              0xb1: "\u00B1",
+              0xb2: "\u00B2",
+              0xb3: "\u00B3",
+              0xb4: "\u00B4",
+              0xb5: "\u00B5",
+              0xb6: "\u00B6",
+              0xb7: "\u00B7",
+              0xb8: "\u00B8",
+              0xb9: "\u00B9",
+              0xba: "\u061B",
+              0xbb: "\u00BB",
+              0xbc: "\u00BC",
+              0xbd: "\u00BD",
+              0xbe: "\u00BE",
+              0xbf: "\u061F",
+              0xc0: "\u06C1",
+              0xc1: "\u0621",
+              0xc2: "\u0622",
+              0xc3: "\u0623",
+              0xc4: "\u0624",
+              0xc5: "\u0625",
+              0xc6: "\u0626",
+              0xc7: "\u0627",
+              0xc8: "\u0628",
+              0xc9: "\u0629",
+              0xca: "\u062A",
+              0xcb: "\u062B",
+              0xcc: "\u062C",
+              0xcd: "\u062D",
+              0xce: "\u062E",
+              0xcf: "\u062F",
+              0xd0: "\u0630",
+              0xd1: "\u0631",
+              0xd2: "\u0632",
+              0xd3: "\u0633",
+              0xd4: "\u0634",
+              0xd5: "\u0635",
+              0xd6: "\u0636",
+              0xd7: "\u00D7",
+              0xd8: "\u0637",
+              0xd9: "\u0638",
+              0xda: "\u0639",
+              0xdb: "\u063A",
+              0xdc: "\u0640",
+              0xdd: "\u0641",
+              0xde: "\u0642",
+              0xdf: "\u0643",
+              0xe0: "\u00E0",
+              0xe1: "\u0644",
+              0xe2: "\u00E2",
+              0xe3: "\u0645",
+              0xe4: "\u0646",
+              0xe5: "\u0647",
+              0xe6: "\u0648",
+              0xe7: "\u00E7",
+              0xe8: "\u00E8",
+              0xe9: "\u00E9",
+              0xea: "\u00EA",
+              0xeb: "\u00EB",
+              0xec: "\u0649",
+              0xed: "\u064A",
+              0xee: "\u00EE",
+              0xef: "\u00EF",
+              0xf0: "\u064B",
+              0xf1: "\u064C",
+              0xf2: "\u064D",
+              0xf3: "\u064E",
+              0xf4: "\u00F4",
+              0xf5: "\u064F",
+              0xf6: "\u0650",
+              0xf7: "\u00F7",
+              0xf8: "\u0651",
+              0xf9: "\u00F9",
+              0xfa: "\u0652",
+              0xfb: "\u00FB",
+              0xfc: "\u00FC",
+              0xfd: "\u200E",
+              0xfe: "\u200F",
+              0xff: "\u06D2",
+            };
+
+            // Manual conversion from Windows-1256 to Unicode
+            for (let i = 0; i < uint8Array.length; i++) {
+              const byte = uint8Array[i];
+              if (byte < 0x80) {
+                // ASCII characters
+                windows1256Content += String.fromCharCode(byte);
+              } else {
+                // Use the mapping table for characters >= 0x80
+                windows1256Content +=
+                  windows1256Map[byte] || String.fromCharCode(byte);
+              }
+            }
+
+            console.log(
+              "Manual Windows-1256 conversion result:",
+              windows1256Content.substring(0, 100)
+            );
+
+            if (windows1256Content && !windows1256Content.includes("�")) {
+              decodedContent = windows1256Content;
+              bestEncoding = "manual-windows-1256";
+              console.log("Manual Windows-1256 conversion successful");
+            }
+          } catch (e) {
+            console.warn("Manual conversion failed:", e);
+          }
+        }
+
+        // Final fallback with error tolerance
+        if (!decodedContent) {
+          console.warn(
+            "All encoding attempts failed, using UTF-8 with error tolerance"
+          );
+          const decoder = new TextDecoder("utf-8", { fatal: false });
+          decodedContent = decoder.decode(arrayBuffer);
+        }
+
+        console.log(`Final encoding used: ${bestEncoding}`);
+
+        srtContent = decodedContent;
       } else {
         srtContent = await response.text();
       }
@@ -472,14 +682,18 @@ const VideoPlayer: React.FC = () => {
             parseInt(timeMatch[7]) +
             parseInt(timeMatch[8]) / 1000;
 
-          // For Arabic and RTL languages, preserve the text better
           let text = lines.slice(2).join("\n");
 
-          // Only remove HTML tags but preserve text formatting for RTL languages
+          // Remove HTML tags
           text = text.replace(/<[^>]*>/g, "");
 
-          // Clean up any BOM or invisible characters that might affect RTL rendering
-          text = text.replace(/\uFEFF/g, "").trim();
+          // Clean up common encoding issues for Arabic text
+          text = text
+            .replace(/\uFEFF/g, "") // Remove BOM
+            .replace(/\u200E/g, "") // Remove LTR mark
+            .replace(/\u200F/g, "") // Remove RTL mark
+            .replace(/\u00A0/g, " ") // Replace non-breaking spaces
+            .trim();
 
           cues.push({
             startTime,
@@ -506,15 +720,17 @@ const VideoPlayer: React.FC = () => {
 
     const newText = currentCue ? currentCue.text : "";
 
-    // Debug Arabic specifically
+    // Debug Arabic text specifically
     if (
       selectedSubtitle?.language === "Arabic" &&
+      newText &&
       newText !== currentSubtitleText
     ) {
-      console.log("Arabic subtitle update:", {
+      console.log("Arabic subtitle text:", {
         time: currentTime,
         text: newText,
-        cue: currentCue,
+        chars: newText.split("").map((c) => c.charCodeAt(0)),
+        hasArabic: /[\u0600-\u06FF]/.test(newText),
       });
     }
 
@@ -600,15 +816,11 @@ const VideoPlayer: React.FC = () => {
         {selectedSubtitle && currentSubtitleText && (
           <div
             className={`absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-center max-w-4xl ${
-              selectedSubtitle.language === "Arabic"
-                ? "rtl subtitle-arabic"
-                : "ltr"
+              selectedSubtitle.language === "Arabic" ? "rtl" : "ltr"
             }`}
           >
             <div
-              className={`text-lg leading-relaxed ${
-                selectedSubtitle.language === "Arabic" ? "arabic-text" : ""
-              }`}
+              className="text-lg leading-relaxed"
               style={{
                 textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
                 fontSize:
