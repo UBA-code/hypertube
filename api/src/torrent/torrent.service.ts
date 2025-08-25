@@ -15,6 +15,7 @@ import createStreamResponseDto from './interfaces/responses';
 import { UsersService } from 'src/users/users.service';
 import { Cron } from '@nestjs/schedule';
 import { rm } from 'fs/promises';
+import * as parseTorrent from 'parse-torrent';
 
 @Injectable()
 export class TorrentService {
@@ -174,10 +175,17 @@ export class TorrentService {
 
       const arrayBuffer = !isMagnet && (await res.arrayBuffer());
       const buffer = !isMagnet && Buffer.from(arrayBuffer);
+      let info = parseTorrent(buffer);
+
+      info = await this.cleanTrackers(info);
+
+      // Rebuild the cleaned torrent buffer
+      const cleanBuffer = parseTorrent.toTorrentFile(info);
+
       this.logger.log(
         `Downloading torrent from: ${isMagnet ? magnetUrl : 'buffer'}`,
       );
-      const engine = torrentStream(isMagnet ? magnetUrl : buffer, {
+      const engine = torrentStream(isMagnet ? magnetUrl : cleanBuffer, {
         path: join('/tmp/torrents', movie.imdbId, quality),
       });
 
@@ -575,5 +583,17 @@ export class TorrentService {
       }),
     );
     await this.torrentRepository.save(oldTorrents);
+  }
+
+  async cleanTrackers(info) {
+    // Remove zero-width space and spaces from each tracker URL
+    const sanitizer = (url) => url.replace(/[\u200B\s]/g, '');
+    if (info.announce) {
+      info.announce = info.announce.map(sanitizer);
+    }
+    if (info.announceList) {
+      info.announceList = info.announceList.map((list) => list.map(sanitizer));
+    }
+    return info;
   }
 }
