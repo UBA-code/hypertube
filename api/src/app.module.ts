@@ -51,10 +51,9 @@ import { ScheduleModule } from '@nestjs/schedule';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'subtitles'),
-      serveRoot: '/subtitles',
-    }),
+    ScheduleModule.forRoot(),
+    AuthModule,
+    UsersModule,
     MoviesModule,
     RevokedTokensModule,
     CommentsModule,
