@@ -13,3 +13,5 @@ edit user info
 watch history
 show is watched in library and detailed movie
 add the new auth strategies (gitlab, discord)
+View the profile of any other user, including their profile picture and information.
+However, the email address will remain private.

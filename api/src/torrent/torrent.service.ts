@@ -80,11 +80,15 @@ export class TorrentService {
 
       const hlsDir = join('hls', movie.imdbId, quality);
 
-      const playlistPath = await this.startHlsConversion(
-        torrentFile,
-        hlsDir,
-        movie.imdbId,
-      );
+      const playlistPath =
+        torrent.downloadStatus === 'not_started'
+          ? await this.startHlsConversion(
+              torrent,
+              torrentFile,
+              hlsDir,
+              movie.imdbId,
+            )
+          : torrent.hlsPlaylistPath;
 
       torrent.hlsPlaylistPath = playlistPath;
       torrent.lastWatched = new Date();
@@ -175,13 +179,15 @@ export class TorrentService {
 
       const arrayBuffer = !isMagnet && (await res.arrayBuffer());
       const buffer = !isMagnet && Buffer.from(arrayBuffer);
-      let info = parseTorrent(buffer);
+      let info = !isMagnet && parseTorrent(buffer);
+      let cleanBuffer;
 
-      info = await this.cleanTrackers(info);
+      if (!isMagnet) {
+        info = await this.cleanTrackers(info);
 
-      // Rebuild the cleaned torrent buffer
-      const cleanBuffer = parseTorrent.toTorrentFile(info);
-
+        // Rebuild the cleaned torrent buffer
+        cleanBuffer = parseTorrent.toTorrentFile(info);
+      }
       this.logger.log(
         `Downloading torrent from: ${isMagnet ? magnetUrl : 'buffer'}`,
       );
@@ -205,7 +211,6 @@ export class TorrentService {
         this.logger.log(`Found video file: ${desiredFile.name}`);
         desiredFile.select();
         desiredFile.createReadStream();
-        torrent.downloadStatus = 'downloading';
 
         this.logger.log(
           `Starting download for movie: ${movie.title}, Quality: ${quality}`,
@@ -230,7 +235,12 @@ export class TorrentService {
     });
   }
 
-  async startHlsConversion(videoFile: any, hlsDir: string, movieId: string) {
+  async startHlsConversion(
+    torrent: Torrent,
+    videoFile: any,
+    hlsDir: string,
+    movieId: string,
+  ) {
     return new Promise<string>(async (resolve) => {
       const hlsFullDir = join(process.cwd(), hlsDir);
       try {
@@ -304,11 +314,12 @@ export class TorrentService {
       // }
 
       // Handle FFmpeg events
-      ffmpegCommand.on('start', (commandLine) => {
+      ffmpegCommand.on('start', async (commandLine) => {
+        torrent.downloadStatus = 'downloading';
         this.logger.log(`FFmpeg started: ${commandLine}`);
       });
 
-      ffmpegCommand.on('progress', (progress) => {
+      ffmpegCommand.on('progress', async (progress) => {
         resolve(join(hlsDir, 'playlist.m3u8'));
         if (progress.percent) {
           this.logger.log(
@@ -322,7 +333,12 @@ export class TorrentService {
       });
 
       // Fallback to re-encoding if copy fails
-      ffmpegCommand.on('error', () => {
+      ffmpegCommand.on('error', async () => {
+        await fs.promises.rm(hlsDir, { recursive: true, force: true });
+        torrent.hlsPlaylistPath = null;
+        torrent.downloadStatus = 'not_started';
+        await this.torrentRepository.save(torrent);
+        this.logger.error('HLS conversion failed.');
         throw new Error('HLS conversion failed.');
       });
 
