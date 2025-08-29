@@ -110,7 +110,10 @@ export class UsersService {
   }
 
   async findOneOrCreateByEmail(email: string, user: User): Promise<User> {
-    const userFound = await this.usersRepository.findOneBy({ email });
+    const userFound = await this.usersRepository.findOneBy({
+      email,
+      authType: user.authType,
+    });
     if (userFound && userFound.authType === user.authType) {
       return userFound;
     }
