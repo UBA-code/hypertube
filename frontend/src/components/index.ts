@@ -27,3 +27,4 @@ export { default as PopularMoviesSection } from "./PopularMoviesSection";
 export { default as WatchedMoviesSection } from "./WatchedMoviesSection";
 export { default as LibrarySection } from "./LibrarySection";
 export { default as DownloadsSection } from "./DownloadsSection";
+export { default as ProfileEditSection } from "./ProfileEditSection";

@@ -12,6 +12,7 @@ import {
   WatchedMoviesSection,
   LibrarySection,
   DownloadsSection,
+  ProfileEditSection,
 } from "../components";
 
 // Mock API service that returns promises with data matching your plan structure
@@ -104,6 +105,11 @@ const Dashboard = () => {
     }
   };
 
+  // Handle user profile updates
+  const handleUpdateUser = (updatedUser) => {
+    setCurrentUser(updatedUser);
+  };
+
   // Render loading skeleton
   if (loading) {
     return <DashboardLoadingSkeleton />;
@@ -144,6 +150,12 @@ const Dashboard = () => {
         <LibrarySection activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <DownloadsSection activeTab={activeTab} />
+
+        <ProfileEditSection
+          activeTab={activeTab}
+          currentUser={currentUser}
+          onUpdateUser={handleUpdateUser}
+        />
       </div>
     </div>
   );

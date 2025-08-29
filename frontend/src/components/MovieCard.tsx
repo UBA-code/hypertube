@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlay, FaHeart, FaRegHeart } from "react-icons/fa";
+import { FaPlay, FaHeart, FaRegHeart, FaCheck } from "react-icons/fa";
 import { MdDownload } from "react-icons/md";
 import { RiMovie2Line } from "react-icons/ri";
 
@@ -42,10 +42,9 @@ interface Movie {
 
 interface MovieCardProps {
   movie: Movie;
-  type?: "standard" | "watched";
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
+const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
   const [isFavorite, setIsFavorite] = useState(movie.isFavorite);
   const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
   const navigate = useNavigate();
@@ -120,7 +119,9 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
           <img
             src={movie.coverImage}
             alt={movie.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+              movie.isWatched ? "opacity-75" : ""
+            }`}
           />
         ) : (
           <div className="w-full h-full bg-gray-700 flex items-center justify-center">
@@ -152,11 +153,19 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
           </div>
         </div>
 
-        {type === "watched" && (
+        {/* Watched Status Indicator */}
+        {movie.isWatched && (
+          <div className="absolute top-2 left-2 bg-green-600 bg-opacity-90 rounded-full p-1">
+            <FaCheck className="text-white text-xs" />
+          </div>
+        )}
+
+        {/* Progress bar for watched movies */}
+        {movie.isWatched && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
             <div
-              className="h-full bg-red-500"
-              style={{ width: `${Math.floor(Math.random() * 60) + 40}%` }}
+              className="h-full bg-green-500"
+              style={{ width: `${Math.floor(Math.random() * 40) + 60}%` }}
             ></div>
           </div>
         )}
@@ -172,12 +181,24 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie, type = "standard" }) => {
       </div>
 
       <div className="mt-3">
-        <h3 className="font-semibold truncate">{movie.title}</h3>
+        <h3
+          className={`font-semibold truncate ${
+            movie.isWatched ? "text-green-400" : ""
+          }`}
+        >
+          {movie.title}
+        </h3>
         <div className="flex justify-between text-sm text-gray-400">
           <span>{movie.year}</span>
           <span className="flex items-center">
-            <MdDownload className="mr-1" />
-            {movie.torrents?.[0]?.size || "1.2 GB"}
+            {movie.isWatched ? (
+              <span className="text-green-500 text-xs">Watched</span>
+            ) : (
+              <>
+                <MdDownload className="mr-1" />
+                {movie.torrents?.[0]?.size || "1.2 GB"}
+              </>
+            )}
           </span>
         </div>
       </div>

@@ -15,9 +15,9 @@ const DashboardMobileMenu: React.FC<MobileMenuProps> = ({
 
   return (
     <div className="md:hidden bg-gray-800 p-4 mb-6 rounded-lg">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <button
-          className={`p-3 rounded-lg transition ${
+          className={`p-3 rounded-lg transition text-sm ${
             activeTab === "popular"
               ? "bg-gradient-to-r from-red-600 to-purple-600"
               : "bg-gray-700"
@@ -27,7 +27,7 @@ const DashboardMobileMenu: React.FC<MobileMenuProps> = ({
           Popular
         </button>
         <button
-          className={`p-3 rounded-lg transition ${
+          className={`p-3 rounded-lg transition text-sm ${
             activeTab === "watched"
               ? "bg-gradient-to-r from-red-600 to-purple-600"
               : "bg-gray-700"
@@ -37,7 +37,7 @@ const DashboardMobileMenu: React.FC<MobileMenuProps> = ({
           History
         </button>
         <button
-          className={`p-3 rounded-lg transition ${
+          className={`p-3 rounded-lg transition text-sm ${
             activeTab === "library"
               ? "bg-gradient-to-r from-red-600 to-purple-600"
               : "bg-gray-700"
@@ -47,7 +47,7 @@ const DashboardMobileMenu: React.FC<MobileMenuProps> = ({
           Library
         </button>
         <button
-          className={`p-3 rounded-lg transition ${
+          className={`p-3 rounded-lg transition text-sm ${
             activeTab === "downloads"
               ? "bg-gradient-to-r from-red-600 to-purple-600"
               : "bg-gray-700"
@@ -55,6 +55,16 @@ const DashboardMobileMenu: React.FC<MobileMenuProps> = ({
           onClick={() => setActiveTab("downloads")}
         >
           Downloads
+        </button>
+        <button
+          className={`p-3 rounded-lg transition text-sm ${
+            activeTab === "profile"
+              ? "bg-gradient-to-r from-red-600 to-purple-600"
+              : "bg-gray-700"
+          }`}
+          onClick={() => setActiveTab("profile")}
+        >
+          Profile
         </button>
       </div>
     </div>

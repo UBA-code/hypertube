@@ -106,6 +106,19 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <span>Downloads</span>
             </button>
           </li>
+          <li>
+            <button
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
+                activeTab === "profile"
+                  ? "bg-gradient-to-r from-red-600 to-purple-600"
+                  : "hover:bg-gray-700"
+              }`}
+              onClick={() => setActiveTab("profile")}
+            >
+              <FaUserCircle className="text-xl" />
+              <span>Profile</span>
+            </button>
+          </li>
         </ul>
       </nav>
 
