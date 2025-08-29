@@ -7,14 +7,18 @@ import {
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 
 @Entity()
+@Unique(['email', 'authType'])
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ default: 'https://www.pngmart.com/files/23/Profile-PNG-Photo.png' })
+  @Column({
+    default: 'https://www.pngmart.com/files/23/Profile-PNG-Photo.png',
+  })
   profilePicture: string;
 
   @Column()
