@@ -5,6 +5,8 @@ user can only set movie as watch to itself
 prevent unnecessary transcoding
 set priority to first pieces
 42 auth not work when a torrent is being downloaded
+recheck the user endpoints
+add a check to all data length that taken from users
 
 ## client
 

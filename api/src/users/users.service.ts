@@ -136,6 +136,7 @@ export class UsersService {
     file: Express.Multer.File,
   ): Promise<UserPublicDataDto> {
     const newUser = await this.usersRepository.findOneBy({ id });
+
     if (!newUser) throw new NotFoundException();
     Object.assign(newUser, user);
     if (file && file.buffer) newUser.profilePicture = file.filename;

@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Put,
+  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { UserPublicDataDto } from './dto/public-user.dto';
 import { FileValidationPipe } from 'src/pipes/FileValidationPipe';
 import { UploadInterceptor } from 'src/interceptors/upload-interceptor';
 import { plainToInstance } from 'class-transformer';
+import { Request } from 'express';
 
 @ApiTags('Users')
 @Controller('users')
@@ -79,12 +81,14 @@ export class UsersController {
     type: UserPublicDataDto,
   })
   @UseInterceptors(UploadInterceptor('profilePicture'))
-  @Put(':id')
+  @Put()
   async updateUserById(
-    @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFile(FileValidationPipe) file: Express.Multer.File,
+    @Req() req: Request,
   ) {
+    const id = req.user['id'];
+
     return await this.usersServive.update(id, updateUserDto, file);
   }
 
