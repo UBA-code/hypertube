@@ -139,7 +139,10 @@ export class UsersService {
 
     if (!newUser) throw new NotFoundException();
     Object.assign(newUser, user);
-    if (file && file.buffer) newUser.profilePicture = file.filename;
+    if (file) {
+      newUser.profilePicture =
+        process.env.API_URL + '/uploads/' + file.filename;
+    }
     return await this.usersRepository.save(newUser);
   }
 
