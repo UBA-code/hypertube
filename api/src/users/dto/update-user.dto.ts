@@ -16,4 +16,9 @@ export class UpdateUserDto {
   @IsOptional()
   @ApiProperty()
   profilePicture: string;
+
+  @IsNotEmpty()
+  @IsOptional()
+  @ApiProperty({ example: 'english' })
+  preferredLanguage: string;
 }
