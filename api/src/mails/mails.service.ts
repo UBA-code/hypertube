@@ -1,33 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import * as nodemailer from 'nodemailer';
 import { log } from 'console';
 
 @Injectable()
 export class MailsService {
-  private sesClient: SESClient;
+  private transporter: nodemailer.Transporter;
 
   constructor() {
-    this.sesClient = new SESClient({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY,
-        secretAccessKey: process.env.AWS_SECRET_KEY,
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
       },
     });
   }
 
   async sendEmail(to: string, subject: string, body: string) {
-    const command = new SendEmailCommand({
-      Destination: { ToAddresses: [to] },
-      Message: {
-        Body: { Html: { Charset: 'UTF-8', Data: body } },
-        Subject: { Charset: 'UTF-8', Data: subject },
-      },
-      Source: process.env.AWS_SENDER_EMAIL,
-    });
+    const mailOptions = {
+      from: process.env.GMAIL_FROM,
+      to: to,
+      subject: subject,
+      html: body,
+    };
 
     try {
-      await this.sesClient.send(command);
+      const result = await this.transporter.sendMail(mailOptions);
+      log('Email sent successfully:', result.messageId);
       return { message: 'Email sent successfully' };
     } catch (error) {
       console.error('Failed to send email:', error);
