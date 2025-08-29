@@ -133,6 +133,30 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleGitlabAuth = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement GitLab OAuth
+      console.log("GitLab OAuth initiated");
+      window.location.href = "http://localhost:3000/auth/gitlab";
+    } catch (error) {
+      console.error("GitLab auth failed:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDiscordAuth = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement Discord OAuth
+      console.log("Discord OAuth initiated");
+      window.location.href = "http://localhost:3000/auth/discord";
+    } catch (error) {
+      console.error("Discord auth failed:", error);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col">
       {/* Header */}
@@ -167,6 +191,8 @@ const LoginPage: React.FC = () => {
               onGithubAuth={handleGithubAuth}
               onGoogleAuth={handleGoogleAuth}
               on42Auth={handle42Auth}
+              onGitlabAuth={handleGitlabAuth}
+              onDiscordAuth={handleDiscordAuth}
             />
 
             {/* Divider */}
