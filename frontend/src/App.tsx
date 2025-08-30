@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import SearchResults from "./pages/SearchResults";
 import MovieDetails from "./pages/MovieDetails";
 import VideoPlayer from "./pages/VideoPlayer";
@@ -23,6 +24,7 @@ function App() {
             path="/reset-password/:token"
             element={<ResetPasswordPage />}
           />
+          <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/results" element={<SearchResults />} />
           <Route path="/movies/:imdbId" element={<MovieDetails />} />
