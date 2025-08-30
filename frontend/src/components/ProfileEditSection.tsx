@@ -247,7 +247,6 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
                 <h3 className="text-xl font-semibold">
                   {currentUser?.userName}
                 </h3>
-                <p className="text-gray-400">Premium Member</p>
               </div>
             </div>
 
