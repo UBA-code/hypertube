@@ -104,11 +104,14 @@ export class AuthService {
   }
 
   async validateResetToken(token: string): Promise<boolean> {
-    return (
-      (await this.jwtService.verifyAsync(token, {
+    try {
+      await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_RESET_PASSWORD_SECRET,
-      })) !== null
-    );
+      });
+      return true;
+    } catch {
+      throw new BadRequestException('Invalid token, possibly expired');
+    }
   }
 
   async sendResetPassword(email: string) {
