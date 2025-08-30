@@ -53,7 +53,7 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
 
       <SearchBar defaultValue={searchDefaultValue} />
 
-      <div className="hidden md:flex items-center space-x-4 ml-4">
+      {/* <div className="hidden md:flex items-center space-x-4 ml-4">
         {showNotification && (
           <button className="relative p-2 rounded-full hover:bg-gray-800">
             <FaBell className="text-xl" />
@@ -69,7 +69,7 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
         ) : (
           <FaUserCircle className="text-gray-400 text-3xl" />
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

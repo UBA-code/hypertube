@@ -149,8 +149,6 @@ const Dashboard = () => {
 
         <LibrarySection activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        <DownloadsSection activeTab={activeTab} />
-
         <ProfileEditSection
           activeTab={activeTab}
           currentUser={currentUser}

@@ -161,14 +161,14 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         )}
 
         {/* Progress bar for watched movies */}
-        {movie.isWatched && (
+        {/* {movie.isWatched && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
             <div
               className="h-full bg-green-500"
               style={{ width: `${Math.floor(Math.random() * 40) + 60}%` }}
             ></div>
           </div>
-        )}
+        )} */}
 
         {movie.imdbRating && (
           <div

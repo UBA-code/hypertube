@@ -225,14 +225,14 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
           <MdTrendingUp className="mr-2 text-red-500" />
           Popular Movies
         </h2>
-        <div className="flex space-x-2">
+        {/* <div className="flex space-x-2">
           <button className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition">
             Movies
           </button>
           <button className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition">
             TV Shows
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Error State */}

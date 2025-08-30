@@ -48,7 +48,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         )}
         <div>
           <p className="font-semibold">{currentUser?.userName}</p>
-          <p className="text-sm text-gray-400">Premium Member</p>
         </div>
       </div>
 
@@ -93,7 +92,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <span>My Library</span>
             </button>
           </li>
-          <li>
+          {/* <li>
             <button
               className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
                 activeTab === "downloads"
@@ -105,7 +104,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <MdDownload className="text-xl" />
               <span>Downloads</span>
             </button>
-          </li>
+          </li> */}
           <li>
             <button
               className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
@@ -123,10 +122,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       </nav>
 
       <div className="mt-auto pt-4 border-t border-gray-700">
-        <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition">
+        {/* <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition">
           <FaCog className="text-xl" />
           <span>Settings</span>
-        </button>
+        </button> */}
         <button
           onClick={onLogout}
           className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition"
