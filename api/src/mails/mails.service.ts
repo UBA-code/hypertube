@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { log } from 'console';
 
 @Injectable()
 export class MailsService {
   private transporter: nodemailer.Transporter;
-
+  private logger = new Logger(MailsService.name);
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -61,6 +61,6 @@ export class MailsService {
     `;
 
     await this.sendEmail(email, subject, body);
-    log(`email has been sent to ${email}`);
+    this.logger.log(`email has been sent to ${email}`);
   }
 }

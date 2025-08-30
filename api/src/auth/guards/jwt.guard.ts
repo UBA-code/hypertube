@@ -49,13 +49,16 @@ export class JwtGuard extends AuthGuard('jwt') {
 
     const user = await this.userService.findOneBy({ id: decodedToken.sub });
 
-    if (!user.verified) {
+    if (
+      !user.verified &&
+      req.originalUrl.startsWith('/auth/verify-email/') === false
+    ) {
       console.log('-'.repeat(10));
       console.log('User is not verified');
       console.log('-'.repeat(10));
       req.res
         .status(401)
-        .json({ redirectTo: `${process.env.CLIENT_URL}/login` });
+        .json({ redirectTo: `${process.env.CLIENT_URL}/check-email` });
       return false;
     }
 

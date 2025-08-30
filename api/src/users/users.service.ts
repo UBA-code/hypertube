@@ -12,6 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { MailsService } from 'src/mails/mails.service';
 
 @Injectable()
 export class UsersService {
@@ -19,6 +20,7 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
+    private mailService: MailsService,
   ) {}
 
   async create(
@@ -51,6 +53,19 @@ export class UsersService {
       sub: newUser.id,
       username: newUser.userName,
     });
+    const token = await this.jwtService.signAsync(
+      {
+        sub: newUser.id,
+        username: newUser.userName,
+        email: newUser.email,
+      },
+      {
+        secret: process.env.JWT_RESET_PASSWORD_SECRET,
+        expiresIn: process.env.JWT_RESET_PASSWORD_EXPIRATION,
+      },
+    );
+
+    await this.mailService.sendVerifyEmail(newUser.email, token);
 
     return {
       accessToken,

@@ -12,7 +12,6 @@ import AuthLoginInfoDto from './dto/auth-login-info.dto';
 import { log } from 'console';
 import { MailsService } from 'src/mails/mails.service';
 import { RevokedTokensService } from 'src/revoked-tokens/revoked-tokens.service';
-import { Response } from 'express';
 
 @Injectable()
 export class AuthService {

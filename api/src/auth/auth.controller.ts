@@ -158,6 +158,7 @@ export class AuthController {
     );
   }
 
+  @SkipAuth()
   @Post('logout')
   @ApiOperation({ summary: 'logout user' })
   @ApiResponse({
@@ -166,10 +167,12 @@ export class AuthController {
   })
   @HttpCode(200)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    await this.authService.logout(
-      req['user']['id'],
-      req.cookies['accessToken'],
-    );
+    if (req['user']) {
+      await this.authService.logout(
+        req['user']['id'],
+        req.cookies['accessToken'],
+      );
+    }
 
     res.clearCookie('accessToken', {
       httpOnly: true,
