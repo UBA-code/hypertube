@@ -10,7 +10,7 @@ export default class RevokedToken {
   token: string;
 
   @Column()
-  type: 'accessToken' | 'foget-password-token';
+  type: 'accessToken' | 'forget-password-token' | 'email-verification-token';
 
   @Column()
   expiredAt: Date;

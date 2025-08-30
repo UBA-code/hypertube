@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
@@ -11,9 +12,12 @@ import AuthLoginInfoDto from './dto/auth-login-info.dto';
 import { log } from 'console';
 import { MailsService } from 'src/mails/mails.service';
 import { RevokedTokensService } from 'src/revoked-tokens/revoked-tokens.service';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -151,7 +155,7 @@ export class AuthService {
     const revokedToken = this.revokedTokensService.createRevokedToken({
       token,
       user,
-      type: 'foget-password-token',
+      type: 'forget-password-token',
       expiredAt: new Date(decodedToken.exp * 1000),
     });
 
@@ -161,5 +165,53 @@ export class AuthService {
       `user ${user.userName} with email ${user.email} is change it's password`,
     );
     return { message: 'password changed successfuly' };
+  }
+
+  async sendVerificationMail(email: string, user: User) {
+    const token = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        username: user.userName,
+        email: email,
+      },
+      {
+        secret: process.env.JWT_RESET_PASSWORD_SECRET,
+        expiresIn: process.env.JWT_RESET_PASSWORD_EXPIRATION,
+      },
+    );
+
+    await this.mailService.sendVerifyEmail(email, token);
+    this.logger.log(`Verification email sent to ${email}`);
+  }
+
+  async verifyEmailByToken(userId: number, token: string) {
+    const user = await this.usersService.findOneBy({ id: userId });
+
+    const isRevoked = await this.revokedTokensService.findOne({
+      where: { token },
+    });
+
+    if (isRevoked) {
+      throw new BadRequestException('Invalid token');
+    }
+
+    try {
+      await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_RESET_PASSWORD_SECRET,
+      });
+      const decodedToken = await this.jwtService.decode(token);
+      const revokedToken = await this.revokedTokensService.createRevokedToken({
+        token,
+        user,
+        expiredAt: new Date(decodedToken.exp * 1000),
+        type: 'email-verification-token',
+      });
+
+      user.verified = true;
+      await this.usersService.saveUser(user);
+      await this.revokedTokensService.saveRevokedToken(revokedToken);
+    } catch {
+      throw new BadRequestException('Invalid token');
+    }
   }
 }

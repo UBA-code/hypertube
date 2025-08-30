@@ -44,6 +44,7 @@ export class UsersService {
     if (file) newUser.profilePicture = file.filename;
     newUser.password = await this.hashPassword(user.password);
     newUser.authType = 'local';
+    newUser.verified = false;
     await this.usersRepository.save(newUser);
 
     const accessToken = await this.jwtService.signAsync({
