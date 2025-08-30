@@ -49,6 +49,14 @@ export class JwtGuard extends AuthGuard('jwt') {
 
     const user = await this.userService.findOneBy({ id: decodedToken.sub });
 
+    if (!user.verified) {
+      console.log('-'.repeat(10));
+      console.log('User is not verified');
+      console.log('-'.repeat(10));
+      req.res.json({ redirectTo: `${process.env.CLIENT_URL}/login` });
+      return false;
+    }
+
     user.lastActive = new Date();
 
     await this.userService.saveUser(user);

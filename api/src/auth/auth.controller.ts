@@ -320,11 +320,7 @@ export class AuthController {
 
   @Get('verify-email/:token')
   @ApiOperation({ summary: 'verify email' })
-  async verifyEmail(
-    @Param('token') token: string,
-    @Res({ passthrough: true }) res: Response,
-    @Req() req: Request,
-  ) {
+  async verifyEmail(@Param('token') token: string, @Req() req: Request) {
     return await this.authService.verifyEmailByToken(req['user']['id'], token);
   }
 
