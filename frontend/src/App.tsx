@@ -5,10 +5,12 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import CheckEmailPage from "./pages/CheckEmailPage";
 import SearchResults from "./pages/SearchResults";
 import MovieDetails from "./pages/MovieDetails";
 import VideoPlayer from "./pages/VideoPlayer";
 import "./index.css";
+// @ts-expect-error - DashBoard is a .jsx file
 import Dashboard from "./pages/DashBoard";
 
 function App() {
@@ -25,6 +27,7 @@ function App() {
             element={<ResetPasswordPage />}
           />
           <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+          <Route path="/check-email" element={<CheckEmailPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/results" element={<SearchResults />} />
           <Route path="/movies/:imdbId" element={<MovieDetails />} />

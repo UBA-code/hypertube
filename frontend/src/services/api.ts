@@ -30,9 +30,11 @@ api.interceptors.response.use(
 		if (error.response?.status === 401) {
 			const redirectTo = error.response?.data?.redirectTo;
 			if (redirectTo && window.location.href !== redirectTo) {
+				console.log("Redirecting to:", redirectTo);
 				window.location.href = redirectTo;
 			} else if (window.location.pathname !== "/login") {
-				window.location.href = "/login";
+				console.log("Redirecting to: /login");
+				// window.location.href = "/login";
 			}
 		}
 		return Promise.reject(error);

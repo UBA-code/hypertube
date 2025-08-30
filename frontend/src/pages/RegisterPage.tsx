@@ -58,14 +58,22 @@ const RegisterPage: React.FC = () => {
         setNotification({
           message:
             response.data.message ||
-            "Registration successful! Redirecting to dashboard...",
+            "Registration successful! Please check your email to verify your account.",
           type: "success",
         });
 
-        // Navigate to dashboard after a short delay to show the success message
+        // Navigate to check email page after a short delay to show the success message
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate(`/check-email?email=${encodeURIComponent(userData.email)}`);
         }, 2000);
+      } else {
+        // Handle other response cases
+        setNotification({
+          message:
+            response.data.message ||
+            "Registration failed. Please try again.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Registration failed:", error);
