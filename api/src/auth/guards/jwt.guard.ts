@@ -53,7 +53,9 @@ export class JwtGuard extends AuthGuard('jwt') {
       console.log('-'.repeat(10));
       console.log('User is not verified');
       console.log('-'.repeat(10));
-      req.res.json({ redirectTo: `${process.env.CLIENT_URL}/login` });
+      req.res
+        .status(401)
+        .json({ redirectTo: `${process.env.CLIENT_URL}/login` });
       return false;
     }
 
