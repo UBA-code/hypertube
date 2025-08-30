@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSearch, FaTimes } from "react-icons/fa";
+import api from "../services/api.ts";
 
 interface SearchResult {
   imdbId: string;
@@ -40,14 +41,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("http://localhost:3000/auth/me", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-        setIsAuthenticated(response.ok);
+        await api.get("/auth/me");
+        setIsAuthenticated(true);
       } catch {
         setIsAuthenticated(false);
       }
@@ -89,40 +84,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setLoading(true);
     try {
       console.log("Performing live search for:", query); // Debug log
-      const response = await fetch(
-        `http://localhost:3000/movies/search?query=${encodeURIComponent(
-          query
-        )}&limit=5`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        }
+      const response = await api.get(
+        `/movies/search?query=${encodeURIComponent(query)}&limit=5`
       );
 
-      console.log("Search response status:", response.status); // Debug log
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Live search response:", data); // Debug log
-        // Handle both direct array and wrapped response formats
-        const results: SearchResult[] = Array.isArray(data)
-          ? data
-          : data.movies || [];
-        console.log("Processed results:", results); // Debug log
-        setSearchResults(results);
-        setShowResults(results.length > 0 || query.trim().length >= 2);
-        setSelectedIndex(-1); // Reset selection
-      } else if (response.status === 401) {
-        setIsAuthenticated(false);
-        navigate("/login");
-      } else {
-        console.error("Search failed with status:", response.status);
-        setSearchResults([]);
-        setShowResults(false);
-      }
+      console.log("Search response:", response.data); // Debug log
+      // Handle both direct array and wrapped response formats
+      const results: SearchResult[] = Array.isArray(response.data)
+        ? response.data
+        : response.data.movies || [];
+      console.log("Processed results:", results); // Debug log
+      setSearchResults(results);
+      setShowResults(results.length > 0 || query.trim().length >= 2);
+      setSelectedIndex(-1); // Reset selection
     } catch (error) {
       console.error("Live search error:", error);
       setSearchResults([]);
@@ -255,11 +229,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 <button
                   key={movie.imdbId}
                   onClick={() => handleResultClick(movie.imdbId)}
-                  className={`w-full px-4 py-3 transition-colors text-left flex items-center space-x-3 ${
-                    index === selectedIndex
+                  className={`w-full px-4 py-3 transition-colors text-left flex items-center space-x-3 ${index === selectedIndex
                       ? "bg-red-600 text-white"
                       : "hover:bg-gray-700 text-white"
-                  }`}
+                    }`}
                 >
                   <div className="w-12 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0">
                     {movie.coverImage ? (
@@ -276,18 +249,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4
-                      className={`font-medium truncate ${
-                        index === selectedIndex ? "text-white" : "text-white"
-                      }`}
+                      className={`font-medium truncate ${index === selectedIndex ? "text-white" : "text-white"
+                        }`}
                     >
                       {movie.title}
                     </h4>
                     <p
-                      className={`text-sm ${
-                        index === selectedIndex
+                      className={`text-sm ${index === selectedIndex
                           ? "text-red-100"
                           : "text-gray-400"
-                      }`}
+                        }`}
                     >
                       {movie.year} • ⭐{" "}
                       {movie.imdbRating ? movie.imdbRating.toFixed(1) : "N/A"}

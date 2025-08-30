@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
 import SocialAuthButtons from "../components/SocialAuthButtons";
 import Notification from "../components/Notification";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,19 +19,9 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch("http://localhost:3000/auth/me", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Include cookies for authentication
-        });
-
+        await api.get("/auth/me");
         // If the response is successful (not 401), user is authenticated
-        if (response.ok) {
-          navigate("/dashboard");
-        }
-        // If 401, user is not authenticated, stay on login page
+        navigate("/dashboard");
       } catch (error) {
         console.log("Auth check failed:", error);
         // If there's an error, assume user is not authenticated and stay on page
@@ -45,22 +37,13 @@ const LoginPage: React.FC = () => {
       // TODO: Implement username login logic
       console.log("username login:", { username, password });
 
-      const response = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies for authentication
-        body: JSON.stringify({ username, password }),
-      });
+      const response = await api.post("/auth/login", { username, password });
 
-      const responseData = await response.json();
-
-      if (response.ok && responseData.success) {
+      if (response.data.success) {
         // Success case
         setNotification({
           message:
-            responseData.message ||
+            response.data.message ||
             "Login successful! Redirecting to dashboard...",
           type: "success",
         });
@@ -69,27 +52,28 @@ const LoginPage: React.FC = () => {
         setTimeout(() => {
           navigate("/dashboard");
         }, 2000);
-      } else {
-        // Error case
-        let errorMessage = "Login failed. Please try again.";
-
-        if (responseData.message) {
-          if (Array.isArray(responseData.message)) {
-            errorMessage = responseData.message.join(", ");
-          } else {
-            errorMessage = responseData.message;
-          }
-        }
-
-        setNotification({
-          message: errorMessage,
-          type: "error",
-        });
       }
     } catch (error) {
       console.error("Login failed:", error);
+
+      // Handle axios error response
+      let errorMessage = "Login failed. Please try again.";
+
+      if (error instanceof AxiosError) {
+        if (error.response?.data?.message) {
+          const msg = error.response.data.message;
+          if (Array.isArray(msg)) {
+            errorMessage = msg.join(", ");
+          } else {
+            errorMessage = msg;
+          }
+        } else if (error.request) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        }
+      }
+
       setNotification({
-        message: "Network error. Please check your connection and try again.",
+        message: errorMessage,
         type: "error",
       });
     } finally {

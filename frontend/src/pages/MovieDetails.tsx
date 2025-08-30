@@ -10,6 +10,8 @@ import {
 } from "react-icons/fa";
 import { MdAccessTime, MdDateRange } from "react-icons/md";
 import { CommentsSection, DashboardTopBar } from "../components";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 interface Movie {
   imdbId: string;
@@ -73,18 +75,8 @@ const MovieDetails: React.FC = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch("http://localhost:3000/auth/me", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setCurrentUser(userData);
-        }
+        const response = await api.get("/auth/me");
+        setCurrentUser(response.data);
         // If not authenticated, currentUser stays null but we don't redirect
         // Users can still view movie details without being logged in
       } catch (error) {
@@ -123,23 +115,10 @@ const MovieDetails: React.FC = () => {
     const newFavoriteStatus = !isFavorite;
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/movies/favorite/${movie.imdbId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ setTo: newFavoriteStatus }),
-        }
+      await api.post(
+        `/movies/favorite/${movie.imdbId}`,
+        { setTo: newFavoriteStatus }
       );
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to update favorite status: ${response.statusText}`
-        );
-      }
 
       // Update local state only if API call was successful
       setIsFavorite(newFavoriteStatus);
@@ -158,38 +137,23 @@ const MovieDetails: React.FC = () => {
     try {
       setLoadingQualities(true);
       setQualitiesError(null);
-      const response = await fetch(
-        `http://localhost:3000/torrent/availableQualities/${movie.imdbId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        }
+      const response = await api.get(
+        `/torrent/availableQualities/${movie.imdbId}`
       );
 
-      if (!response.ok) {
-        // Try to get the error message from the response
-        try {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.message ||
-              `Failed to fetch qualities: ${response.statusText}`
-          );
-        } catch {
-          throw new Error(`Failed to fetch qualities: ${response.statusText}`);
-        }
-      }
-
-      const qualities: string[] = await response.json();
-      setAvailableQualities(qualities);
+      setAvailableQualities(response.data);
       setShowQualityPopup(true);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An error occurred while fetching available qualities";
+      let errorMessage = "An error occurred while fetching available qualities";
+
+      if (error instanceof AxiosError) {
+        errorMessage = error.response?.data?.message ||
+          `Failed to fetch qualities: ${error.response?.statusText}` ||
+          errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setQualitiesError(errorMessage);
       setShowQualityPopup(true); // Still show popup to display the error
       console.error("Error fetching available qualities:", error);
@@ -237,28 +201,26 @@ const MovieDetails: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`http://localhost:3000/movies/${imdbId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("Movie not found");
-          }
-          throw new Error(
-            `Failed to fetch movie details: ${response.statusText}`
-          );
-        }
-
-        const movieData: Movie = await response.json();
+        const response = await api.get(`/movies/${imdbId}`);
+        const movieData: Movie = response.data;
         setMovie(movieData);
         setIsFavorite(movieData.isFavorite);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        let errorMessage = "An error occurred";
+
+        if (err instanceof AxiosError) {
+          if (err.response?.status === 404) {
+            errorMessage = "Movie not found";
+          } else {
+            errorMessage = err.response?.data?.message ||
+              `Failed to fetch movie details: ${err.response?.statusText}` ||
+              errorMessage;
+          }
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+
+        setError(errorMessage);
         console.error("Error fetching movie details:", err);
       } finally {
         setLoading(false);
@@ -441,9 +403,8 @@ const MovieDetails: React.FC = () => {
               <button
                 onClick={toggleFavorite}
                 disabled={isUpdatingFavorite}
-                className={`flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition ${
-                  isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition ${isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
               >
                 {isFavorite ? (
                   <FaHeart className="mr-2 text-red-500" />
@@ -453,8 +414,8 @@ const MovieDetails: React.FC = () => {
                 {isUpdatingFavorite
                   ? "Updating..."
                   : isFavorite
-                  ? "Favorited"
-                  : "Add to Favorites"}
+                    ? "Favorited"
+                    : "Add to Favorites"}
               </button>
             </div>
 
@@ -470,42 +431,42 @@ const MovieDetails: React.FC = () => {
             {(movie.cast.directors.length > 0 ||
               movie.cast.actors.length > 0 ||
               movie.cast.producers.length > 0) && (
-              <div>
-                <h2 className="text-2xl font-bold mb-3">Cast & Crew</h2>
-                <div className="space-y-3">
-                  {movie.cast.directors.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-300 mb-1">
-                        Directors
-                      </h3>
-                      <p className="text-gray-400">
-                        {movie.cast.directors.join(", ")}
-                      </p>
-                    </div>
-                  )}
-                  {movie.cast.actors.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-300 mb-1">
-                        Actors
-                      </h3>
-                      <p className="text-gray-400">
-                        {movie.cast.actors.join(", ")}
-                      </p>
-                    </div>
-                  )}
-                  {movie.cast.producers.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-300 mb-1">
-                        Producers
-                      </h3>
-                      <p className="text-gray-400">
-                        {movie.cast.producers.join(", ")}
-                      </p>
-                    </div>
-                  )}
+                <div>
+                  <h2 className="text-2xl font-bold mb-3">Cast & Crew</h2>
+                  <div className="space-y-3">
+                    {movie.cast.directors.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-gray-300 mb-1">
+                          Directors
+                        </h3>
+                        <p className="text-gray-400">
+                          {movie.cast.directors.join(", ")}
+                        </p>
+                      </div>
+                    )}
+                    {movie.cast.actors.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-gray-300 mb-1">
+                          Actors
+                        </h3>
+                        <p className="text-gray-400">
+                          {movie.cast.actors.join(", ")}
+                        </p>
+                      </div>
+                    )}
+                    {movie.cast.producers.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-gray-300 mb-1">
+                          Producers
+                        </h3>
+                        <p className="text-gray-400">
+                          {movie.cast.producers.join(", ")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Additional Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-800">

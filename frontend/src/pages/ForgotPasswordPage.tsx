@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { FaPlay, FaArrowLeft, FaEnvelope } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -24,29 +26,18 @@ const ForgotPasswordPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        "http://localhost:3000/auth/forgot-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to send reset email");
-      }
-
+      await api.post("/auth/forgot-password", { email });
       setIsSubmitted(true);
     } catch (error) {
       console.error("Password reset failed:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to send reset email. Please try again.";
+      let errorMessage = "Failed to send reset email. Please try again.";
+
+      if (error instanceof AxiosError) {
+        errorMessage = error.response?.data?.message || errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -101,9 +92,8 @@ const ForgotPasswordPage: React.FC = () => {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className={`w-full pl-10 pr-4 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                          error ? "border-red-500" : "border-gray-700"
-                        }`}
+                        className={`w-full pl-10 pr-4 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${error ? "border-red-500" : "border-gray-700"
+                          }`}
                         placeholder="Enter your email"
                         disabled={isLoading}
                       />

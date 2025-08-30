@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { FaPlay, FaArrowLeft, FaEye, FaEyeSlash, FaLock } from "react-icons/fa";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 const ResetPasswordPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -70,24 +72,10 @@ const ResetPasswordPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        "http://localhost:3000/auth/reset-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            newPassword: formData.newPassword,
-            token: token,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reset password");
-      }
+      await api.post("/auth/reset-password", {
+        newPassword: formData.newPassword,
+        token: token,
+      });
 
       setIsSuccess(true);
       // Redirect to login after 3 seconds
@@ -96,10 +84,14 @@ const ResetPasswordPage: React.FC = () => {
       }, 3000);
     } catch (error: unknown) {
       console.error("Password reset failed:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to reset password. Please try again.";
+      let errorMessage = "Failed to reset password. Please try again.";
+
+      if (error instanceof AxiosError) {
+        errorMessage = error.response?.data?.message || errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -171,9 +163,8 @@ const ResetPasswordPage: React.FC = () => {
                         type={showPassword.newPassword ? "text" : "password"}
                         value={formData.newPassword}
                         onChange={handleInputChange}
-                        className={`w-full pl-10 pr-12 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                          error ? "border-red-500" : "border-gray-700"
-                        }`}
+                        className={`w-full pl-10 pr-12 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${error ? "border-red-500" : "border-gray-700"
+                          }`}
                         placeholder="Enter new password"
                         disabled={isLoading}
                       />
@@ -205,9 +196,8 @@ const ResetPasswordPage: React.FC = () => {
                         }
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className={`w-full pl-10 pr-12 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                          error ? "border-red-500" : "border-gray-700"
-                        }`}
+                        className={`w-full pl-10 pr-12 py-3 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${error ? "border-red-500" : "border-gray-700"
+                          }`}
                         placeholder="Confirm new password"
                         disabled={isLoading}
                       />

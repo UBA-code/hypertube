@@ -17,6 +17,7 @@ import {
 
 // Mock API service that returns promises with data matching your plan structure
 import { getWatchedMovies } from "../services/server";
+import api from "../services/api.ts";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,24 +31,10 @@ const Dashboard = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch("http://localhost:3000/auth/me", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Include cookies for authentication
-        });
-
-        // If the response is not successful (401 or other error), user is not authenticated
-        if (!response.ok) {
-          navigate("/login");
-          return;
-        }
-
-        // If successful, user is authenticated, get user data
-        const userData = await response.json();
-        setCurrentUser(userData);
-      } catch {
+        const response = await api.get("/auth/me");
+        setCurrentUser(response.data);
+      } catch (error) {
+        console.log("Auth check failed:", error);
         // If there's an error, assume user is not authenticated and redirect
         navigate("/login");
         return;
@@ -82,22 +69,9 @@ const Dashboard = () => {
   // Handle logout
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:3000/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies for authentication
-      });
-
-      if (response.ok) {
-        // Logout successful, redirect to login page
-        navigate("/login");
-      } else {
-        console.error("Logout failed:", response.statusText);
-        // Even if logout fails on server, clear local state and redirect
-        navigate("/login");
-      }
+      const response = await api.post("/auth/logout");
+      // Logout successful, redirect to login page
+      navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
       // Even if there's a network error, redirect to login

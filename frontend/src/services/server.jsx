@@ -1,5 +1,6 @@
 // src/services/server.jsx
 // This file mocks API responses with the exact structure from your plan PDF
+import api from './api.ts';
 
 // Mock data that matches your defined interfaces
 const mockUser = {
@@ -211,23 +212,8 @@ const mockMovies = [
 // API functions that return promises with mock data
 export const getPopularMovies = async (page = 1) => {
   try {
-    const response = await fetch(
-      `http://localhost:3000/movies/popular?page=${page}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies for authentication
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch popular movies: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data; // Return the full response with movies and totalResults
+    const response = await api.get(`/movies/popular?page=${page}`);
+    return response.data; // Return the full response with movies and totalResults
   } catch (error) {
     console.error("Error fetching popular movies:", error);
     // Return empty response on error to prevent crashes
@@ -237,20 +223,8 @@ export const getPopularMovies = async (page = 1) => {
 
 export const getWatchedMovies = async () => {
   try {
-    const response = await fetch("http://localhost:3000/movies/watchedMovies", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include", // Include cookies for authentication
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch watched movies: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await api.get("/movies/watchedMovies");
+    return response.data;
   } catch (error) {
     console.error("Error fetching watched movies:", error);
     // Return empty array on error to prevent crashes
@@ -270,25 +244,10 @@ export const getCurrentUser = () => {
 // Search movies function - you can replace this with real API call
 export const searchMovies = async (query, page = 1) => {
   try {
-    const response = await fetch(
-      `http://localhost:3000/movies/search?query=${encodeURIComponent(
-        query
-      )}&page=${page}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      }
+    const response = await api.get(
+      `/movies/search?query=${encodeURIComponent(query)}&page=${page}`
     );
-
-    if (!response.ok) {
-      throw new Error(`Search failed: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
+    return response.data;
   } catch (error) {
     console.error("Search error:", error);
     throw error;

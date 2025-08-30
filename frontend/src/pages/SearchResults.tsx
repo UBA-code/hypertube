@@ -10,6 +10,8 @@ import {
 import { MdDownload } from "react-icons/md";
 import { RiMovie2Line } from "react-icons/ri";
 import { DashboardTopBar } from "../components";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 interface Movie {
   imdbId: string;
@@ -170,21 +172,8 @@ const SearchResults: React.FC = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch("http://localhost:3000/auth/me", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          navigate("/login");
-          return;
-        }
-
-        const userData = await response.json();
-        setCurrentUser(userData);
+        const response = await api.get("/auth/me");
+        setCurrentUser(response.data);
       } catch {
         navigate("/login");
         return;
@@ -205,24 +194,13 @@ const SearchResults: React.FC = () => {
         }
         setError(null);
 
-        const response = await fetch(
-          `http://localhost:3000/movies/search?query=${encodeURIComponent(
+        const response = await api.get(
+          `/movies/search?query=${encodeURIComponent(
             searchQuery
-          )}&page=${page}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          }
+          )}&page=${page}`
         );
 
-        if (!response.ok) {
-          throw new Error(`Search failed: ${response.statusText}`);
-        }
-
-        const data: SearchResponse = await response.json();
+        const data: SearchResponse = response.data;
 
         if (append) {
           setMovies((prev) => {

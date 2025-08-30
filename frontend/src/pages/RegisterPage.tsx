@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
 import SocialAuthButtons from "../components/SocialAuthButtons";
 import Notification from "../components/Notification";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,19 +19,9 @@ const RegisterPage: React.FC = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch("http://localhost:3000/auth/me", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Include cookies for authentication
-        });
-
+        await api.get("/auth/me");
         // If the response is successful (not 401), user is authenticated
-        if (response.ok) {
-          navigate("/dashboard");
-        }
-        // If 401, user is not authenticated, stay on registration page
+        navigate("/dashboard");
       } catch (error) {
         console.log("Auth check failed:", error);
         // If there's an error, assume user is not authenticated and stay on page
@@ -59,22 +51,13 @@ const RegisterPage: React.FC = () => {
       };
       console.log("Email registration:", x);
 
-      const response = await fetch("http://localhost:3000/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies for authentication
-        body: JSON.stringify(x),
-      });
+      const response = await api.post("/auth/register", x);
 
-      const responseData = await response.json();
-
-      if (response.status === 201 && responseData.success) {
+      if (response.status === 201 && response.data.success) {
         // Success case
         setNotification({
           message:
-            responseData.message ||
+            response.data.message ||
             "Registration successful! Redirecting to dashboard...",
           type: "success",
         });
@@ -83,27 +66,28 @@ const RegisterPage: React.FC = () => {
         setTimeout(() => {
           navigate("/dashboard");
         }, 2000);
-      } else {
-        // Error case
-        let errorMessage = "Registration failed. Please try again.";
-
-        if (responseData.message) {
-          if (Array.isArray(responseData.message)) {
-            errorMessage = responseData.message.join(", ");
-          } else {
-            errorMessage = responseData.message;
-          }
-        }
-
-        setNotification({
-          message: errorMessage,
-          type: "error",
-        });
       }
     } catch (error) {
       console.error("Registration failed:", error);
+
+      // Handle axios error response
+      let errorMessage = "Registration failed. Please try again.";
+
+      if (error instanceof AxiosError) {
+        if (error.response?.data?.message) {
+          const msg = error.response.data.message;
+          if (Array.isArray(msg)) {
+            errorMessage = msg.join(", ");
+          } else {
+            errorMessage = msg;
+          }
+        } else if (error.request) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        }
+      }
+
       setNotification({
-        message: "Network error. Please check your connection and try again.",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -147,6 +131,30 @@ const RegisterPage: React.FC = () => {
     }
   };
 
+  const handleGitlabAuth = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement GitLab OAuth
+      console.log("GitLab OAuth initiated");
+      window.location.href = "http://localhost:3000/auth/gitlab";
+    } catch (error) {
+      console.error("GitLab auth failed:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDiscordAuth = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement Discord OAuth
+      console.log("Discord OAuth initiated");
+      window.location.href = "http://localhost:3000/auth/discord";
+    } catch (error) {
+      console.error("Discord auth failed:", error);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col">
       {/* Header */}
@@ -183,6 +191,8 @@ const RegisterPage: React.FC = () => {
               onGithubAuth={handleGithubAuth}
               onGoogleAuth={handleGoogleAuth}
               on42Auth={handle42Auth}
+              onGitlabAuth={handleGitlabAuth}
+              onDiscordAuth={handleDiscordAuth}
             />
 
             {/* Divider */}

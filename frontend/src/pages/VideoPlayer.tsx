@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Hls from "hls.js";
 import {
-  FaArrowLeft,
   FaPlay,
   FaPause,
   FaVolumeUp,
   FaVolumeMute,
   FaExpand,
   FaCompress,
+  FaArrowLeft,
+  FaCog,
   FaClosedCaptioning,
 } from "react-icons/fa";
 import "./VideoPlayer.css";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 interface Subtitle {
   id: number;
@@ -70,39 +73,16 @@ const VideoPlayer: React.FC = () => {
 
         // Fetch available subtitles
         try {
-          const subtitlesResponse = await fetch(
-            `http://localhost:3000/movies/subtitles/${imdbId}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              credentials: "include",
-            }
-          );
-
-          if (subtitlesResponse.ok) {
-            const subtitlesData: Subtitle[] = await subtitlesResponse.json();
-            setSubtitles(subtitlesData);
-          }
+          const subtitlesResponse = await api.get(`/movies/subtitles/${imdbId}`);
+          setSubtitles(subtitlesResponse.data);
         } catch (subtitleError) {
           console.warn("Failed to fetch subtitles:", subtitleError);
         }
 
         // First, initiate the stream
-        const streamResponse = await fetch(
-          `http://localhost:3000/torrent/stream/${imdbId}?quality=${quality}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          }
-        );
-        if (!streamResponse.ok) {
-          throw new Error("Failed to initiate stream");
-        }
+        await api.get(`/torrent/stream/${imdbId}?quality=${quality}`);
+
+        // Axios automatically throws for error status codes, so if we reach here, it was successful
 
         // Wait a moment for the stream to be ready
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -193,8 +173,8 @@ const VideoPlayer: React.FC = () => {
               } else if (data.details && data.details.totalduration) {
                 setDuration((prev) =>
                   data.details &&
-                  data.details.totalduration &&
-                  data.details.totalduration > prev
+                    data.details.totalduration &&
+                    data.details.totalduration > prev
                     ? data.details.totalduration
                     : prev
                 );
@@ -422,19 +402,15 @@ const VideoPlayer: React.FC = () => {
   // Alternative method to load subtitles manually if needed
   const loadSubtitleManually = async (subtitle: Subtitle) => {
     try {
-      const response = await fetch(`http://localhost:3000/${subtitle.url}`, {
-        credentials: "include",
+      const response = await api.get(`/${subtitle.url}`, {
+        responseType: 'arraybuffer'
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch subtitle: ${response.status}`);
-      }
 
       let srtContent: string;
 
       if (subtitle.language === "Arabic") {
         // For Arabic, try multiple encoding methods
-        const arrayBuffer = await response.arrayBuffer();
+        const arrayBuffer = response.data;
 
         // Try different encodings for Arabic
         const encodings = ["utf-8", "windows-1256", "iso-8859-6"];
@@ -648,7 +624,11 @@ const VideoPlayer: React.FC = () => {
 
         srtContent = decodedContent;
       } else {
-        srtContent = await response.text();
+        // For non-Arabic, get text response
+        const textResponse = await api.get(`/${subtitle.url}`, {
+          responseType: 'text'
+        });
+        srtContent = textResponse.data;
       }
 
       console.log(
@@ -757,9 +737,8 @@ const VideoPlayer: React.FC = () => {
     <div className="h-screen bg-black flex flex-col relative">
       {/* Header */}
       <div
-        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-          showControls ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
+          }`}
       >
         <div className="flex items-center justify-between">
           <button
@@ -827,9 +806,8 @@ const VideoPlayer: React.FC = () => {
         {/* Manual Subtitle Display */}
         {selectedSubtitle && currentSubtitleText && (
           <div
-            className={`absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-center max-w-4xl ${
-              selectedSubtitle.language === "Arabic" ? "rtl" : "ltr"
-            }`}
+            className={`absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-center max-w-4xl ${selectedSubtitle.language === "Arabic" ? "rtl" : "ltr"
+              }`}
           >
             <div
               className="text-lg leading-relaxed"
@@ -871,9 +849,8 @@ const VideoPlayer: React.FC = () => {
 
       {/* Controls */}
       <div
-        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-          showControls ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
+          }`}
       >
         {/* Progress Bar */}
         <div className="mb-4">
@@ -885,9 +862,8 @@ const VideoPlayer: React.FC = () => {
             onChange={handleSeek}
             className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
             style={{
-              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${
-                (currentTime / duration) * 100
-              }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
+              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(currentTime / duration) * 100
+                }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
             }}
           />
           <div className="flex justify-between text-white text-sm mt-1">
@@ -928,9 +904,8 @@ const VideoPlayer: React.FC = () => {
             <div className="relative subtitle-menu">
               <button
                 onClick={toggleSubtitleMenu}
-                className={`text-white hover:text-red-500 transition ${
-                  selectedSubtitle ? "text-red-500" : ""
-                }`}
+                className={`text-white hover:text-red-500 transition ${selectedSubtitle ? "text-red-500" : ""
+                  }`}
                 title="Subtitles"
               >
                 <FaClosedCaptioning />
@@ -944,11 +919,10 @@ const VideoPlayer: React.FC = () => {
                   </div>
                   <button
                     onClick={() => handleSubtitleSelect(null)}
-                    className={`block w-full text-left px-2 py-1 text-sm rounded transition ${
-                      !selectedSubtitle
+                    className={`block w-full text-left px-2 py-1 text-sm rounded transition ${!selectedSubtitle
                         ? "bg-red-500 text-white"
                         : "text-gray-300 hover:bg-gray-700"
-                    }`}
+                      }`}
                   >
                     Off
                   </button>
@@ -956,11 +930,10 @@ const VideoPlayer: React.FC = () => {
                     <button
                       key={subtitle.id}
                       onClick={() => handleSubtitleSelect(subtitle)}
-                      className={`block w-full text-left px-2 py-1 text-sm rounded transition ${
-                        selectedSubtitle?.id === subtitle.id
+                      className={`block w-full text-left px-2 py-1 text-sm rounded transition ${selectedSubtitle?.id === subtitle.id
                           ? "bg-red-500 text-white"
                           : "text-gray-300 hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       {subtitle.language}
                     </button>

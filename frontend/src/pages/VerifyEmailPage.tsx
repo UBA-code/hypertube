@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import api from "../services/api.ts";
+import { AxiosError } from "axios";
 
 interface VerificationState {
   loading: boolean;
@@ -27,35 +29,24 @@ const VerifyEmailPage = () => {
       }
 
       try {
-        const response = await fetch(
-          `http://localhost:3000/auth/verify-email/${token}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        await api.get(`/auth/verify-email/${token}`);
 
-        if (response.ok) {
-          setState({
-            loading: false,
-            success: true,
-            error: null,
-          });
-        } else {
-          const errorData = await response.json();
-          setState({
-            loading: false,
-            success: false,
-            error: errorData.message || "Email verification failed",
-          });
+        setState({
+          loading: false,
+          success: true,
+          error: null,
+        });
+      } catch (error) {
+        let errorMessage = "Email verification failed";
+
+        if (error instanceof AxiosError) {
+          errorMessage = error.response?.data?.message || errorMessage;
         }
-      } catch {
+
         setState({
           loading: false,
           success: false,
-          error: "Network error. Please try again later.",
+          error: errorMessage,
         });
       }
     };
