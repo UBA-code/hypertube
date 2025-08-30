@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { FaUser, FaGlobe, FaCamera, FaSave, FaTimes } from "react-icons/fa";
+import {
+  FaUser,
+  FaGlobe,
+  FaCamera,
+  FaSave,
+  FaTimes,
+  FaEnvelope,
+} from "react-icons/fa";
+import Notification from "./Notification";
 
 interface User {
   id: number;
@@ -32,6 +40,7 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
   const [formData, setFormData] = useState({
     firstName: currentUser?.firstName || "",
     lastName: currentUser?.lastName || "",
+    email: currentUser?.email || "",
     preferredLanguage: currentUser?.preferredLanguage || "english",
   });
 
@@ -66,6 +75,12 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
 
     if (!formData.lastName.trim()) {
       newErrors.lastName = "Last name is required";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
     }
 
     setErrors(newErrors);
@@ -121,11 +136,14 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
     }
 
     setIsLoading(true);
+    const emailChanged = formData.email !== currentUser?.email;
+
     try {
       // Create FormData for multipart/form-data request
       const formDataToSend = new FormData();
       formDataToSend.append("firstName", formData.firstName);
       formDataToSend.append("lastName", formData.lastName);
+      formDataToSend.append("email", formData.email);
       formDataToSend.append("preferredLanguage", formData.preferredLanguage);
 
       if (profilePictureFile) {
@@ -147,10 +165,18 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
       // Update the user in the parent component
       onUpdateUser(updatedUser);
 
-      setNotification({
-        message: "Profile updated successfully!",
-        type: "success",
-      });
+      if (emailChanged) {
+        setNotification({
+          message:
+            "Profile updated successfully! Please check your email inbox to confirm your new email address.",
+          type: "success",
+        });
+      } else {
+        setNotification({
+          message: "Profile updated successfully!",
+          type: "success",
+        });
+      }
 
       setIsEditing(false);
       setProfilePictureFile(null);
@@ -171,6 +197,7 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
     setFormData({
       firstName: currentUser?.firstName || "",
       lastName: currentUser?.lastName || "",
+      email: currentUser?.email || "",
       preferredLanguage: currentUser?.preferredLanguage || "english",
     });
     setProfilePictureFile(null);
@@ -178,22 +205,21 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
     setErrors({});
   };
 
-  // Hide notification after 5 seconds
-  React.useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
-
   if (activeTab !== "profile") {
     return null;
   }
 
   return (
     <div className="space-y-6">
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -209,19 +235,6 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
           </button>
         )}
       </div>
-
-      {/* Notification */}
-      {notification && (
-        <div
-          className={`p-4 rounded-lg border ${
-            notification.type === "success"
-              ? "bg-green-900/20 border-green-500 text-green-400"
-              : "bg-red-900/20 border-red-500 text-red-400"
-          }`}
-        >
-          {notification.message}
-        </div>
-      )}
 
       {/* Profile Content */}
       <div className="bg-gray-800 rounded-xl p-6">
@@ -390,6 +403,33 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
                 </div>
                 {errors.lastName && (
                   <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Email
+                </label>
+                <div className="relative">
+                  <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full pl-10 pr-4 py-3 bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      errors.email ? "border-red-500" : "border-gray-600"
+                    }`}
+                    placeholder="Enter your email address"
+                    disabled={isLoading}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                 )}
               </div>
 
