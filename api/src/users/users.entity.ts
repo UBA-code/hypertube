@@ -36,6 +36,9 @@ export class User {
   @Column()
   password: string;
 
+  @Column({ default: true })
+  verified: boolean;
+
   @Column({ default: 'english' })
   preferredLanguage: string;
 

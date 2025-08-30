@@ -8,12 +8,16 @@ import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/skip-auth.decorator';
 import { RevokedTokensService } from 'src/revoked-tokens/revoked-tokens.service';
 import { Observable } from 'rxjs';
+import { UsersService } from 'src/users/users.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class JwtGuard extends AuthGuard('jwt') {
   constructor(
     private revokedTokenService: RevokedTokensService,
     private reflector: Reflector,
+    private userService: UsersService,
+    private jwtService: JwtService,
   ) {
     super();
   }
@@ -33,6 +37,7 @@ export class JwtGuard extends AuthGuard('jwt') {
     const isRevoked = await this.revokedTokenService.findOne({
       where: { token },
     });
+    const decodedToken = await this.jwtService.decode(token);
 
     if (!token) {
       throw new UnauthorizedException();
@@ -41,6 +46,12 @@ export class JwtGuard extends AuthGuard('jwt') {
     if (isRevoked) {
       throw new UnauthorizedException('Invalid token');
     }
+
+    const user = await this.userService.findOneBy({ id: decodedToken.sub });
+
+    user.lastActive = new Date();
+
+    await this.userService.saveUser(user);
 
     // Call super.canActivate and handle async result
     const result = super.canActivate(context); // Assuming this guard extends a base class

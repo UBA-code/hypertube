@@ -23,4 +23,6 @@ export class UserPublicDataDto {
   email: string;
   @Exclude()
   password: string;
+  @Exclude()
+  verified: boolean;
 }

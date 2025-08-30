@@ -1,8 +1,11 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpCode,
+  NotFoundException,
+  Param,
   Post,
   Req,
   Res,
@@ -299,9 +302,37 @@ export class AuthController {
     return plainToInstance(userInfoDto, user);
   }
 
-  @SkipAuth()
-  @Get('hello')
-  getHello() {
-    return 'Hello World!';
+  @Post('send-verification-mail')
+  @ApiOperation({ summary: 'send verification mail to user' })
+  async sendVerificationMail(@Req() req: Request) {
+    const user = await this.usersService.findOneBy({ id: req['user']['id'] });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.verified) {
+      throw new BadRequestException('User is already verified');
+    }
+
+    return await this.authService.sendVerificationMail(user.email, user);
+  }
+
+  @Get('verify-email/:token')
+  @ApiOperation({ summary: 'verify email' })
+  async verifyEmail(
+    @Param('token') token: string,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
+    return await this.authService.verifyEmailByToken(req['user']['id'], token);
+  }
+
+  @Get('isVerified')
+  async isVerified(@Req() req: Request) {
+    const user = await this.usersService.findOneBy({ id: req['user']['id'] });
+
+    if (!user) throw new NotFoundException('User not found');
+    return { isVerified: user.verified };
   }
 }
