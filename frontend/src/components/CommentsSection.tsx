@@ -5,6 +5,9 @@ import {
   FaTimes,
   FaSortAmountDown,
   FaSortAmountUp,
+  FaCalendarAlt,
+  FaGlobe,
+  FaClock,
 } from "react-icons/fa";
 import { MdSend } from "react-icons/md";
 
@@ -13,6 +16,18 @@ interface Comment {
   content: string;
   username: string;
   userId: number;
+  userAvatar: string;
+  createdAt: string;
+}
+
+interface UserProfile {
+  id: number;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  profilePicture: string;
+  preferredLanguage: string;
+  lastActive: string;
   createdAt: string;
 }
 
@@ -130,6 +145,218 @@ const DeleteConfirmationModal: React.FC<{
   );
 };
 
+// Helper function to format dates
+const formatDateString = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInHours = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+  );
+
+  if (diffInHours < 24) {
+    return `${diffInHours} hours ago`;
+  } else if (diffInHours < 168) {
+    // 7 days
+    const days = Math.floor(diffInHours / 24);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  } else {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+};
+
+// User Profile Modal Component
+const UserProfileModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  userId: number | null;
+}> = ({ isOpen, onClose, userId }) => {
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch user profile when modal opens
+  useEffect(() => {
+    if (isOpen && userId) {
+      const fetchUserProfile = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const response = await fetch(
+            `http://localhost:3000/users/${userId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch user profile");
+          }
+
+          const userData: UserProfile = await response.json();
+          setUserProfile(userData);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "An error occurred");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchUserProfile();
+    }
+  }, [isOpen, userId]);
+
+  // Handle escape key press
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 transform animate-scaleIn">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">User Profile</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <FaTimes />
+          </button>
+        </div>
+
+        {loading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent mx-auto mb-3"></div>
+            <p className="text-gray-300">Loading user profile...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-400 mb-3">{error}</p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        )}
+
+        {userProfile && !loading && !error && (
+          <div className="space-y-4">
+            {/* Avatar and basic info */}
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full overflow-hidden mb-3">
+                {userProfile.profilePicture ? (
+                  <img
+                    src={userProfile.profilePicture}
+                    alt={`${userProfile.userName}'s avatar`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      target.parentElement!.classList.add(
+                        "bg-gray-700",
+                        "flex",
+                        "items-center",
+                        "justify-center"
+                      );
+                      target.parentElement!.innerHTML =
+                        '<svg class="text-gray-400 w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                    <FaUser className="text-gray-400 text-2xl" />
+                  </div>
+                )}
+              </div>
+              <h4 className="text-xl font-semibold text-white mb-1">
+                {userProfile.firstName} {userProfile.lastName || ""}
+              </h4>
+              <p className="text-gray-400 text-sm">@{userProfile.userName}</p>
+            </div>
+
+            {/* User details */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center space-x-3 text-gray-300">
+                <FaUser className="text-gray-400 w-4 h-4" />
+                <span className="text-sm">User ID: {userProfile.id}</span>
+              </div>
+              <div className="flex items-center space-x-3 text-gray-300">
+                <FaGlobe className="text-gray-400 w-4 h-4" />
+                <span className="text-sm">
+                  Language: {userProfile.preferredLanguage}
+                </span>
+              </div>
+              <div className="flex items-center space-x-3 text-gray-300">
+                <FaClock className="text-gray-400 w-4 h-4" />
+                <span className="text-sm">
+                  Last Active: {formatDateString(userProfile.lastActive)}
+                </span>
+              </div>
+              <div className="flex items-center space-x-3 text-gray-300">
+                <FaCalendarAlt className="text-gray-400 w-4 h-4" />
+                <span className="text-sm">
+                  Member Since:{" "}
+                  {new Date(userProfile.createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Individual Comment Component
 const CommentItem: React.FC<{
   comment: Comment;
@@ -138,6 +365,7 @@ const CommentItem: React.FC<{
 }> = ({ comment, currentUser, onDelete }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -197,23 +425,60 @@ const CommentItem: React.FC<{
     setShowDeleteModal(false);
   };
 
+  const handleUserClick = () => {
+    setShowUserProfile(true);
+  };
+
+  const handleCloseUserProfile = () => {
+    setShowUserProfile(false);
+  };
+
   const canDelete = currentUser && currentUser.id === comment.userId;
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 transition-colors">
       <div className="flex items-start justify-between">
         <div className="flex items-center mb-2">
-          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center mr-3">
-            <FaUser className="text-gray-400 text-sm" />
-          </div>
-          <div>
-            <span className="font-semibold text-gray-200">
-              {comment.username}
-            </span>
-            <span className="text-gray-500 text-sm ml-2">
-              {formatDate(comment.createdAt)}
-            </span>
-          </div>
+          <button
+            onClick={handleUserClick}
+            className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
+            title="View user profile"
+          >
+            <div className="w-8 h-8 rounded-full mr-3 overflow-hidden">
+              {comment.userAvatar ? (
+                <img
+                  src={comment.userAvatar}
+                  alt={`${comment.username}'s avatar`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to icon if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    target.parentElement!.classList.add(
+                      "bg-gray-700",
+                      "flex",
+                      "items-center",
+                      "justify-center"
+                    );
+                    target.parentElement!.innerHTML =
+                      '<svg class="text-gray-400 text-sm w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                  <FaUser className="text-gray-400 text-sm" />
+                </div>
+              )}
+            </div>
+            <div>
+              <span className="font-semibold text-gray-200 hover:text-white transition-colors">
+                {comment.username}
+              </span>
+              <span className="text-gray-500 text-sm ml-2">
+                {formatDate(comment.createdAt)}
+              </span>
+            </div>
+          </button>
         </div>
 
         {canDelete && (
@@ -236,6 +501,13 @@ const CommentItem: React.FC<{
         onConfirm={handleDelete}
         onCancel={handleCancelDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={showUserProfile}
+        onClose={handleCloseUserProfile}
+        userId={comment.userId}
       />
     </div>
   );
