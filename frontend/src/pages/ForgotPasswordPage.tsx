@@ -24,14 +24,30 @@ const ForgotPasswordPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Implement forgot password logic
-      console.log("Password reset request for:", email);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch(
+        "http://localhost:3000/auth/forgot-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to send reset email");
+      }
+
       setIsSubmitted(true);
     } catch (error) {
       console.error("Password reset failed:", error);
-      setError("Failed to send reset email. Please try again.");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to send reset email. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
