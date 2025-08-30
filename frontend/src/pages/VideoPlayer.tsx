@@ -192,7 +192,9 @@ const VideoPlayer: React.FC = () => {
                 }
               } else if (data.details && data.details.totalduration) {
                 setDuration((prev) =>
-                  data.details && data.details.totalduration && data.details.totalduration > prev
+                  data.details &&
+                  data.details.totalduration &&
+                  data.details.totalduration > prev
                     ? data.details.totalduration
                     : prev
                 );
@@ -755,8 +757,9 @@ const VideoPlayer: React.FC = () => {
     <div className="h-screen bg-black flex flex-col relative">
       {/* Header */}
       <div
-        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
-          }`}
+        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
       >
         <div className="flex items-center justify-between">
           <button
@@ -824,8 +827,9 @@ const VideoPlayer: React.FC = () => {
         {/* Manual Subtitle Display */}
         {selectedSubtitle && currentSubtitleText && (
           <div
-            className={`absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-center max-w-4xl ${selectedSubtitle.language === "Arabic" ? "rtl" : "ltr"
-              }`}
+            className={`absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-center max-w-4xl ${
+              selectedSubtitle.language === "Arabic" ? "rtl" : "ltr"
+            }`}
           >
             <div
               className="text-lg leading-relaxed"
@@ -867,8 +871,9 @@ const VideoPlayer: React.FC = () => {
 
       {/* Controls */}
       <div
-        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
-          }`}
+        className={`absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
       >
         {/* Progress Bar */}
         <div className="mb-4">
@@ -880,8 +885,9 @@ const VideoPlayer: React.FC = () => {
             onChange={handleSeek}
             className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
             style={{
-              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(currentTime / duration) * 100
-                }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
+              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${
+                (currentTime / duration) * 100
+              }%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`,
             }}
           />
           <div className="flex justify-between text-white text-sm mt-1">
@@ -922,8 +928,9 @@ const VideoPlayer: React.FC = () => {
             <div className="relative subtitle-menu">
               <button
                 onClick={toggleSubtitleMenu}
-                className={`text-white hover:text-red-500 transition ${selectedSubtitle ? "text-red-500" : ""
-                  }`}
+                className={`text-white hover:text-red-500 transition ${
+                  selectedSubtitle ? "text-red-500" : ""
+                }`}
                 title="Subtitles"
               >
                 <FaClosedCaptioning />
@@ -937,10 +944,11 @@ const VideoPlayer: React.FC = () => {
                   </div>
                   <button
                     onClick={() => handleSubtitleSelect(null)}
-                    className={`block w-full text-left px-2 py-1 text-sm rounded transition ${!selectedSubtitle
+                    className={`block w-full text-left px-2 py-1 text-sm rounded transition ${
+                      !selectedSubtitle
                         ? "bg-red-500 text-white"
                         : "text-gray-300 hover:bg-gray-700"
-                      }`}
+                    }`}
                   >
                     Off
                   </button>
@@ -948,10 +956,11 @@ const VideoPlayer: React.FC = () => {
                     <button
                       key={subtitle.id}
                       onClick={() => handleSubtitleSelect(subtitle)}
-                      className={`block w-full text-left px-2 py-1 text-sm rounded transition ${selectedSubtitle?.id === subtitle.id
+                      className={`block w-full text-left px-2 py-1 text-sm rounded transition ${
+                        selectedSubtitle?.id === subtitle.id
                           ? "bg-red-500 text-white"
                           : "text-gray-300 hover:bg-gray-700"
-                        }`}
+                      }`}
                     >
                       {subtitle.language}
                     </button>

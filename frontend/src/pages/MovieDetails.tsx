@@ -175,7 +175,7 @@ const MovieDetails: React.FC = () => {
           const errorData = await response.json();
           throw new Error(
             errorData.message ||
-            `Failed to fetch qualities: ${response.statusText}`
+              `Failed to fetch qualities: ${response.statusText}`
           );
         } catch {
           throw new Error(`Failed to fetch qualities: ${response.statusText}`);
@@ -209,7 +209,9 @@ const MovieDetails: React.FC = () => {
       // Navigate directly to the video player with the required parameters
       // The VideoPlayer component will handle the streaming initialization
       navigate(
-        `/player?imdbId=${movie.imdbId}&title=${encodeURIComponent(movie.title)}&quality=${quality}`
+        `/player?imdbId=${movie.imdbId}&title=${encodeURIComponent(
+          movie.title
+        )}&quality=${quality}`
       );
     } catch (error) {
       console.error("Error starting stream:", error);
@@ -432,15 +434,16 @@ const MovieDetails: React.FC = () => {
                 <FaPlay className="mr-2" />
                 {loadingQualities ? "Loading..." : "Watch Now"}
               </button>
-              <button className="flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition">
+              {/* <button className="flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition">
                 <FaDownload className="mr-2" />
                 Download
-              </button>
+              </button> */}
               <button
                 onClick={toggleFavorite}
                 disabled={isUpdatingFavorite}
-                className={`flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition ${isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition ${
+                  isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 {isFavorite ? (
                   <FaHeart className="mr-2 text-red-500" />
@@ -450,8 +453,8 @@ const MovieDetails: React.FC = () => {
                 {isUpdatingFavorite
                   ? "Updating..."
                   : isFavorite
-                    ? "Favorited"
-                    : "Add to Favorites"}
+                  ? "Favorited"
+                  : "Add to Favorites"}
               </button>
             </div>
 
@@ -467,42 +470,42 @@ const MovieDetails: React.FC = () => {
             {(movie.cast.directors.length > 0 ||
               movie.cast.actors.length > 0 ||
               movie.cast.producers.length > 0) && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-3">Cast & Crew</h2>
-                  <div className="space-y-3">
-                    {movie.cast.directors.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-gray-300 mb-1">
-                          Directors
-                        </h3>
-                        <p className="text-gray-400">
-                          {movie.cast.directors.join(", ")}
-                        </p>
-                      </div>
-                    )}
-                    {movie.cast.actors.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-gray-300 mb-1">
-                          Actors
-                        </h3>
-                        <p className="text-gray-400">
-                          {movie.cast.actors.join(", ")}
-                        </p>
-                      </div>
-                    )}
-                    {movie.cast.producers.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-gray-300 mb-1">
-                          Producers
-                        </h3>
-                        <p className="text-gray-400">
-                          {movie.cast.producers.join(", ")}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-3">Cast & Crew</h2>
+                <div className="space-y-3">
+                  {movie.cast.directors.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-300 mb-1">
+                        Directors
+                      </h3>
+                      <p className="text-gray-400">
+                        {movie.cast.directors.join(", ")}
+                      </p>
+                    </div>
+                  )}
+                  {movie.cast.actors.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-300 mb-1">
+                        Actors
+                      </h3>
+                      <p className="text-gray-400">
+                        {movie.cast.actors.join(", ")}
+                      </p>
+                    </div>
+                  )}
+                  {movie.cast.producers.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-300 mb-1">
+                        Producers
+                      </h3>
+                      <p className="text-gray-400">
+                        {movie.cast.producers.join(", ")}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
             {/* Additional Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-800">

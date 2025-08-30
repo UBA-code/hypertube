@@ -190,7 +190,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         </h3>
         <div className="flex justify-between text-sm text-gray-400">
           <span>{movie.year}</span>
-          <span className="flex items-center">
+          {/* <span className="flex items-center">
             {movie.isWatched ? (
               <span className="text-green-500 text-xs">Watched</span>
             ) : (
@@ -199,7 +199,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
                 {movie.torrents?.[0]?.size || "1.2 GB"}
               </>
             )}
-          </span>
+          </span> */}
         </div>
       </div>
     </div>
