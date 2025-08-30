@@ -385,40 +385,22 @@ export class TorrentService {
     playlistPath: string,
   ) {
     return ffmpeg(videoStream)
+      .videoCodec('libx264')
       .addOptions([
-        '-sn', // Skip subtitle streams
-        '-map 0:v:0', // Map first video stream
-        '-map 0:a:0', // Map first audio stream
-
-        // Video settings - force 8-bit and baseline profile
-        '-c:v libx264',
-        '-profile:v baseline', // Force baseline profile (not High)
+        '-profile:v baseline',
         '-level 3.0',
-        '-pix_fmt yuv420p', // Force 8-bit (not yuv420p10le)
+        '-pix_fmt yuv420p',
         '-preset veryfast',
-
-        // Audio settings - handle 6-channel properly
-        '-c:a aac',
-        '-ac 2', // Downmix 6 channels to stereo
-        '-ar 48000', // Keep sample rate
-        '-b:a 128k', // Set audio bitrate
-
-        // Fix timing issues
-        '-avoid_negative_ts make_zero',
-        '-fflags +genpts',
-
-        // HLS settings
+        '-r 24',
+      ])
+      .audioCodec('aac')
+      .addOptions(['-ac 2', '-ar 48000', '-b:a 128k'])
+      .addOptions([
         '-f hls',
         '-hls_time 4',
         '-hls_list_size 0',
-        '-hls_flags independent_segments+split_by_time',
-        '-hls_segment_type mpegts',
         '-hls_segment_filename',
         segmentPattern,
-
-        // Additional compatibility fixes
-        '-force_key_frames expr:gte(t,n_forced*4)', // Force keyframes every 4 seconds
-        '-x264opts keyint=96:min-keyint=96:scenecut=-1', // GOP settings for 24fps
       ])
       .output(playlistPath);
   }

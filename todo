@@ -8,6 +8,7 @@ set priority to first pieces
 recheck the user endpoints
 add a check to all data length that taken from users
 check if a forget password link is already sended
+check the allowed routes
 
 ## client
 
