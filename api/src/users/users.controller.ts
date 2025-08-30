@@ -43,7 +43,8 @@ export class UsersController {
   })
   @Get(':id')
   async getUserById(@Param('id', ParseIntPipe) id: number) {
-    return await this.usersServive.findById(id);
+    const user = await this.usersServive.findById(id);
+    return plainToInstance(UserPublicDataDto, user);
   }
 
   @ApiOperation({ summary: 'delete user by id' })
