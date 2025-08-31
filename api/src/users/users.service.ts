@@ -1,6 +1,9 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,14 +16,18 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { MailsService } from 'src/mails/mails.service';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
     private mailService: MailsService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
   ) {}
 
   async create(
@@ -155,12 +162,20 @@ export class UsersService {
     file: Express.Multer.File,
   ): Promise<UserPublicDataDto> {
     const newUser = await this.usersRepository.findOneBy({ id });
+    const { email, ...rest } = user;
 
     if (!newUser) throw new NotFoundException();
-    Object.assign(newUser, user);
+    Object.assign(newUser, rest);
     if (file) {
       newUser.profilePicture =
         process.env.API_URL + '/uploads/' + file.filename;
+    }
+    if (email && email !== newUser.email) {
+      await this.authService.sendVerificationMail(
+        user.email,
+        newUser,
+        'change',
+      );
     }
     return await this.usersRepository.save(newUser);
   }

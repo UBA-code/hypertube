@@ -21,4 +21,9 @@ export class UpdateUserDto {
   @IsOptional()
   @ApiProperty({ example: 'english' })
   preferredLanguage: string;
+
+  @IsNotEmpty()
+  @IsOptional()
+  @ApiProperty({ example: 'name@example.com' })
+  email: string;
 }

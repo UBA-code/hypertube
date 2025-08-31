@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from 'src/users/users.module';
@@ -17,9 +17,10 @@ import { GitlabStrategy } from './strategies/gitlab.strategy';
 import { DiscordStrategy } from './strategies/discord.strategy';
 
 @Module({
+  exports: [AuthService],
   imports: [
     PassportModule,
-    UsersModule,
+    forwardRef(() => UsersModule),
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,

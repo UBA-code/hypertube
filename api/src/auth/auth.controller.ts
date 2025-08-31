@@ -318,7 +318,11 @@ export class AuthController {
       throw new BadRequestException('User is already verified');
     }
 
-    return await this.authService.sendVerificationMail(user.email, user);
+    return await this.authService.sendVerificationMail(
+      user.email,
+      user,
+      'verification',
+    );
   }
 
   @Get('verify-email/:token')

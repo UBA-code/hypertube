@@ -90,7 +90,10 @@ export class UsersController {
   ) {
     const id = req.user['id'];
 
-    return await this.usersServive.update(id, updateUserDto, file);
+    return plainToInstance(
+      UserPublicDataDto,
+      await this.usersServive.update(id, updateUserDto, file),
+    );
   }
 
   @ApiOperation({

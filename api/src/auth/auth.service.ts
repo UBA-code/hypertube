@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -18,6 +20,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private jwtService: JwtService,
     private mailService: MailsService,
@@ -166,12 +169,17 @@ export class AuthService {
     return { message: 'password changed successfuly' };
   }
 
-  async sendVerificationMail(email: string, user: User) {
+  async sendVerificationMail(
+    email: string,
+    user: User,
+    type: 'verification' | 'change',
+  ) {
     const token = await this.jwtService.signAsync(
       {
         sub: user.id,
         username: user.userName,
         email: email,
+        type: type,
       },
       {
         secret: process.env.JWT_VERIFY_MAIL_SECRET,
@@ -210,6 +218,9 @@ export class AuthService {
       });
 
       user.verified = true;
+      if (decodedToken.type === 'change') {
+        user.email = decodedToken.email;
+      }
       await this.usersService.saveUser(user);
       await this.revokedTokensService.saveRevokedToken(revokedToken);
     } catch {
