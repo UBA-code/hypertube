@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { TorrentService } from './torrent.service';
 import { Request, Response } from 'express';
-import { SkipAuth } from 'src/auth/decorators/skip-auth.decorator';
+// import { SkipAuth } from 'src/auth/decorators/skip-auth.decorator';
 import createStreamResponseDto from './interfaces/responses';
 
 @Controller('torrent')

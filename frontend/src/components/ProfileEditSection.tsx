@@ -55,6 +55,28 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
     { value: "japanese", label: "日本語" },
     { value: "korean", label: "한국어" },
     { value: "chinese", label: "中文" },
+    { value: "arabic", label: "العربية" },
+    { value: "hindi", label: "हिन्दी" },
+    {
+      value: "bengali",
+      label: "বাংলা",
+    },
+    {
+      value: "turkish",
+      label: "Türkçe",
+    },
+    {
+      value: "vietnamese",
+      label: "Tiếng Việt",
+    },
+    {
+      value: "thai",
+      label: "ไทย",
+    },
+    {
+      value: "ukrainian",
+      label: "Українська",
+    },
   ];
 
   const validateForm = () => {
@@ -213,11 +235,10 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
       {/* Notification */}
       {notification && (
         <div
-          className={`p-4 rounded-lg border ${
-            notification.type === "success"
-              ? "bg-green-900/20 border-green-500 text-green-400"
-              : "bg-red-900/20 border-red-500 text-red-400"
-          }`}
+          className={`p-4 rounded-lg border ${notification.type === "success"
+            ? "bg-green-900/20 border-green-500 text-green-400"
+            : "bg-red-900/20 border-red-500 text-red-400"
+            }`}
         >
           {notification.message}
         </div>
@@ -352,9 +373,8 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
                     type="text"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                      errors.firstName ? "border-red-500" : "border-gray-600"
-                    }`}
+                    className={`w-full pl-10 pr-4 py-3 bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${errors.firstName ? "border-red-500" : "border-gray-600"
+                      }`}
                     placeholder="Enter your first name"
                     disabled={isLoading}
                   />
@@ -381,9 +401,8 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
                     type="text"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                      errors.lastName ? "border-red-500" : "border-gray-600"
-                    }`}
+                    className={`w-full pl-10 pr-4 py-3 bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${errors.lastName ? "border-red-500" : "border-gray-600"
+                      }`}
                     placeholder="Enter your last name"
                     disabled={isLoading}
                   />
