@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaUser, FaGlobe, FaCamera, FaSave, FaTimes } from "react-icons/fa";
+import { FaUser, FaGlobe, FaCamera, FaSave, FaTimes, FaEnvelope } from "react-icons/fa";
 
 interface User {
   id: number;
@@ -33,6 +33,7 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
     firstName: currentUser?.firstName || "",
     lastName: currentUser?.lastName || "",
     preferredLanguage: currentUser?.preferredLanguage || "english",
+    email: currentUser?.email || "",
   });
 
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(
@@ -90,8 +91,17 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
       newErrors.lastName = "Last name is required";
     }
 
+    if (formData.email && !isValidEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleInputChange = (
@@ -149,6 +159,7 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
       formDataToSend.append("firstName", formData.firstName);
       formDataToSend.append("lastName", formData.lastName);
       formDataToSend.append("preferredLanguage", formData.preferredLanguage);
+      formDataToSend.append("email", formData.email);
 
       if (profilePictureFile) {
         formDataToSend.append("profilePicture", profilePictureFile);
@@ -169,8 +180,13 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
       // Update the user in the parent component
       onUpdateUser(updatedUser);
 
+      // Check if email was changed to show verification notification
+      const emailChanged = formData.email !== currentUser?.email && formData.email.trim() !== "";
+
       setNotification({
-        message: "Profile updated successfully!",
+        message: emailChanged
+          ? "Profile updated successfully! You will receive a link to verify your new email address."
+          : "Profile updated successfully!",
         type: "success",
       });
 
@@ -194,6 +210,7 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
       firstName: currentUser?.firstName || "",
       lastName: currentUser?.lastName || "",
       preferredLanguage: currentUser?.preferredLanguage || "english",
+      email: currentUser?.email || "",
     });
     setProfilePictureFile(null);
     setProfilePicturePreview(null);
@@ -436,6 +453,37 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Email
+                </label>
+                <div className="relative">
+                  <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full pl-10 pr-4 py-3 bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${errors.email ? "border-red-500" : "border-gray-600"
+                      }`}
+                    placeholder="Enter your email address"
+                    disabled={isLoading}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.email}
+                  </p>
+                )}
+                <p className="text-gray-400 text-sm mt-1">
+                  You will receive a link to verify that email
+                </p>
               </div>
 
               <div>
