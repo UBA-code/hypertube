@@ -174,8 +174,8 @@ export class AuthService {
         email: email,
       },
       {
-        secret: process.env.JWT_RESET_PASSWORD_SECRET,
-        expiresIn: process.env.JWT_RESET_PASSWORD_EXPIRATION,
+        secret: process.env.JWT_VERIFY_MAIL_SECRET,
+        expiresIn: process.env.JWT_VERIFY_MAIL_EXPIRATION,
       },
     );
 
@@ -196,9 +196,12 @@ export class AuthService {
 
     try {
       await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_RESET_PASSWORD_SECRET,
+        secret: process.env.JWT_VERIFY_MAIL_SECRET,
       });
       const decodedToken = await this.jwtService.decode(token);
+      if (decodedToken.sub !== user.id) {
+        throw new BadRequestException('Invalid Token');
+      }
       const revokedToken = await this.revokedTokensService.createRevokedToken({
         token,
         user,
