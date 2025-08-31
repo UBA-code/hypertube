@@ -1,7 +1,7 @@
 import {
   Body,
   Controller,
-  Delete,
+  // Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -47,16 +47,16 @@ export class UsersController {
     return plainToInstance(UserPublicDataDto, user);
   }
 
-  @ApiOperation({ summary: 'delete user by id' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return deleted user',
-    type: UserPublicDataDto,
-  })
-  @Delete(':id')
-  async deleteUserById(@Param('id', ParseIntPipe) id: number) {
-    return await this.usersServive.deleteById(id);
-  }
+  // @ApiOperation({ summary: 'delete user by id' })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Return deleted user',
+  //   type: UserPublicDataDto,
+  // })
+  // @Delete(':id')
+  // async deleteUserById(@Param('id', ParseIntPipe) id: number) {
+  //   return await this.usersServive.deleteById(id);
+  // }
 
   @ApiOperation({
     summary: 'get users that contain or match the given username',
@@ -96,21 +96,21 @@ export class UsersController {
     );
   }
 
-  @ApiOperation({
-    summary:
-      'update user profilePicture by id, expect a file with `profilePicture` as key (supported formats: jpg, jpeg, png)',
-  })
-  @ApiResponse({
-    status: 200,
-    description:
-      'return a string if the profilePicture was updated successfully',
-  })
-  @Put(':id/profilePicture')
-  @UseInterceptors(UploadInterceptor('profilePicture'))
-  async updateUserAvatar(
-    @UploadedFile(FileValidationPipe) file: Express.Multer.File,
-    @Param('id', ParseIntPipe) id: number,
-  ) {
-    return await this.usersServive.updateAvatar(id, file);
-  }
+  // @ApiOperation({
+  //   summary:
+  //     'update user profilePicture by id, expect a file with `profilePicture` as key (supported formats: jpg, jpeg, png)',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description:
+  //     'return a string if the profilePicture was updated successfully',
+  // })
+  // @Put(':id/profilePicture')
+  // @UseInterceptors(UploadInterceptor('profilePicture'))
+  // async updateUserAvatar(
+  //   @UploadedFile(FileValidationPipe) file: Express.Multer.File,
+  //   @Param('id', ParseIntPipe) id: number,
+  // ) {
+  //   return await this.usersServive.updateAvatar(id, file);
+  // }
 }
