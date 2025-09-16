@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { extname, join } from 'path';
 import Movie from 'src/movies/entities/movie.entity';
 import { MoviesService } from 'src/movies/movies.service';
@@ -170,7 +175,7 @@ export class TorrentService {
           res = await fetch(magnetUrl);
         } catch {
           this.logger.log(`Failed to download torrent from: ${magnetUrl}`);
-          throw new Error(
+          throw new BadRequestException(
             'Failed to download torrent file. Please check the magnet link.',
           );
         }
@@ -231,7 +236,7 @@ export class TorrentService {
       });
       engine.on('error', (err) => {
         this.logger.error(`Error in torrent engine: ${err.message}`);
-        throw new Error('Error in torrent engine.');
+        throw new BadRequestException('Error in torrent engine.');
       });
     });
   }
@@ -340,7 +345,7 @@ export class TorrentService {
         torrent.downloadStatus = 'not_started';
         await this.torrentRepository.save(torrent);
         this.logger.error('HLS conversion failed.');
-        throw new Error('HLS conversion failed.');
+        throw new BadRequestException('HLS conversion failed.');
       });
 
       // Start the conversion
