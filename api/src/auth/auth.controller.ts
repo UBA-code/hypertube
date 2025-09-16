@@ -152,7 +152,7 @@ export class AuthController {
       throw new UnauthorizedException('Invalid token');
     }
 
-    return await this.authService.resetPassowrd(
+    return await this.authService.resetPassword(
       payload.token,
       payload.newPassword,
     );

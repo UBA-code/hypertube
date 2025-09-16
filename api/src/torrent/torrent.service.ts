@@ -15,7 +15,6 @@ import createStreamResponseDto from './interfaces/responses';
 import { UsersService } from 'src/users/users.service';
 import { Cron } from '@nestjs/schedule';
 import { rm } from 'fs/promises';
-import * as parseTorrent from 'parse-torrent';
 
 @Injectable()
 export class TorrentService {
@@ -179,14 +178,16 @@ export class TorrentService {
 
       const arrayBuffer = !isMagnet && (await res.arrayBuffer());
       const buffer = !isMagnet && Buffer.from(arrayBuffer);
-      let info = !isMagnet && parseTorrent(buffer);
+      let info;
       let cleanBuffer;
 
       if (!isMagnet) {
+        const parseTorrent = await import('parse-torrent');
+        info = parseTorrent.default(buffer);
         info = await this.cleanTrackers(info);
 
         // Rebuild the cleaned torrent buffer
-        cleanBuffer = parseTorrent.toTorrentFile(info);
+        cleanBuffer = parseTorrent.default.toTorrentFile(info);
       }
       this.logger.log(
         `Downloading torrent from: ${isMagnet ? magnetUrl : 'buffer'}`,

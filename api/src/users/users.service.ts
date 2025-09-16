@@ -60,19 +60,12 @@ export class UsersService {
       sub: newUser.id,
       username: newUser.userName,
     });
-    const token = await this.jwtService.signAsync(
-      {
-        sub: newUser.id,
-        username: newUser.userName,
-        email: newUser.email,
-      },
-      {
-        secret: process.env.JWT_RESET_PASSWORD_SECRET,
-        expiresIn: process.env.JWT_RESET_PASSWORD_EXPIRATION,
-      },
-    );
 
-    await this.mailService.sendVerifyEmail(newUser.email, token);
+    await this.authService.sendVerificationMail(
+      user.email,
+      newUser,
+      'verification',
+    );
 
     return {
       accessToken,

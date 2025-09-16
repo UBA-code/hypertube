@@ -101,22 +101,24 @@ export class AuthService {
     return await this.jwtService.decode(token);
   }
 
-  async validateToken(token: string): Promise<boolean> {
-    return (
-      (await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_ACCESS_SECRET,
-      })) !== null
-    );
-  }
-
-  async validateResetToken(token: string): Promise<boolean> {
+  async validateToken(token: string, secret: string): Promise<boolean> {
     try {
-      await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_RESET_PASSWORD_SECRET,
+      const isRevoked = await this.revokedTokensService.findOne({
+        where: { token: token },
       });
+
+      if (isRevoked) {
+        this.logger.error('Token has been revoked');
+        return false;
+      }
+      await this.jwtService.verifyAsync(token, {
+        secret: secret,
+      });
+
       return true;
     } catch {
-      throw new BadRequestException('Invalid token, possibly expired');
+      this.logger.error(`Token ${token} validation failed`);
+      return false;
     }
   }
 
@@ -138,8 +140,10 @@ export class AuthService {
     await this.mailService.sendResetPasswordEmail(user.email, resetToken);
   }
 
-  async resetPassowrd(token: string, newPassword: string) {
-    if (!(await this.validateResetToken(token)))
+  async resetPassword(token: string, newPassword: string) {
+    if (
+      !(await this.validateToken(token, process.env.JWT_RESET_PASSWORD_SECRET))
+    )
       throw new BadRequestException('Invalid token');
     const { sub } = await this.jwtService.decode(token);
     const user = await this.usersService.findOneBy({
@@ -194,20 +198,19 @@ export class AuthService {
   async verifyEmailByToken(userId: number, token: string) {
     const user = await this.usersService.findOneBy({ id: userId });
 
-    const isRevoked = await this.revokedTokensService.findOne({
-      where: { token },
-    });
-
-    if (isRevoked) {
+    if (
+      (await this.validateToken(token, process.env.JWT_VERIFY_MAIL_SECRET)) ===
+      false
+    ) {
       throw new BadRequestException('Invalid token');
     }
 
     try {
-      await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_VERIFY_MAIL_SECRET,
-      });
       const decodedToken = await this.jwtService.decode(token);
       if (decodedToken.sub !== user.id) {
+        this.logger.error(
+          `Token user ID mismatch: ${decodedToken.sub} !== ${user.id}`,
+        );
         throw new BadRequestException('Invalid Token');
       }
       const revokedToken = await this.revokedTokensService.createRevokedToken({
@@ -223,7 +226,10 @@ export class AuthService {
       }
       await this.usersService.saveUser(user);
       await this.revokedTokensService.saveRevokedToken(revokedToken);
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `Error verifying token for user with id ${userId}: ${error.message}`,
+      );
       throw new BadRequestException('Invalid token');
     }
   }
