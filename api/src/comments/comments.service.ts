@@ -20,17 +20,25 @@ export class CommentsService {
     limit: number,
     sortBy: 'DESC' | 'ASC' = 'DESC',
   ) {
-    return await this.commentRepository.find({
+    const comments = await this.commentRepository.find({
       where: {
         movie: { imdbId: imdbId },
       },
-      relations: ['movie'],
+      relations: ['movie', 'user'],
       skip: (page - 1) * limit,
       take: limit,
       order: {
         createdAt: sortBy,
       },
     });
+    return comments.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      username: comment.user.userName,
+      userId: comment.user.id,
+      userAvatar: comment.user.profilePicture,
+      createdAt: comment.createdAt,
+    }));
   }
 
   async addComment(userId: number, movieImdbId: string, content: string) {
@@ -45,17 +53,19 @@ export class CommentsService {
     }
     comment.content = content;
     comment.movie = movie;
-    comment.username = user.userName;
-    comment.userAvatar = user.profilePicture;
-    comment.userId = userId;
+    comment.user = user;
 
     await this.commentRepository.save(comment);
     return 'Comment added successfully';
   }
 
   async deleteCommentById(userId: number, commentId: number) {
+    const user = await this.usersService.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
     const comment = await this.commentRepository.findOne({
-      where: { id: commentId, userId: userId },
+      where: { id: commentId, user: { id: userId } },
     });
 
     if (!comment) {

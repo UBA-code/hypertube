@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import Movie from '../../movies/entities/movie.entity';
+import { User } from 'src/users/users.entity';
 
 @Entity()
 export default class Comment {
@@ -15,14 +16,8 @@ export default class Comment {
   @Column()
   content: string;
 
-  @Column()
-  username: string;
-
-  @Column()
-  userId: number;
-
-  @Column()
-  userAvatar: string;
+  @ManyToOne(() => User, (user) => user.comments)
+  user: User;
 
   @ManyToOne(() => Movie, (movie) => movie.comments, { cascade: ['insert'] })
   @JoinColumn({ name: 'movieId' })
