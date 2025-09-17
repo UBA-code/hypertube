@@ -27,7 +27,7 @@ import { FortyTwoGuard } from './guards/42.guard';
 import { Request, Response } from 'express';
 import { User } from 'src/users/users.entity';
 import { FileValidationPipe } from 'src/pipes/FileValidationPipe';
-import { UploadInterceptor } from 'src/interceptors/upload-interceptor';
+import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
 import { GoogleGuard } from './guards/google.guard';
 import { GithubGuard } from './guards/github.guard';
 import { MailsService } from 'src/mails/mails.service';
@@ -152,7 +152,7 @@ export class AuthController {
       throw new UnauthorizedException('Invalid token');
     }
 
-    return await this.authService.resetPassowrd(
+    return await this.authService.resetPassword(
       payload.token,
       payload.newPassword,
     );

@@ -9,13 +9,14 @@ import {
   Req,
   UploadedFile,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserPublicDataDto } from './dto/public-user.dto';
 import { FileValidationPipe } from 'src/pipes/FileValidationPipe';
-import { UploadInterceptor } from 'src/interceptors/upload-interceptor';
+import { UploadInterceptor } from 'src/interceptors/upload.interceptor';
 import { plainToInstance } from 'class-transformer';
 import { Request } from 'express';
 
@@ -84,7 +85,7 @@ export class UsersController {
   @UseInterceptors(UploadInterceptor('profilePicture'))
   @Put()
   async updateUserById(
-    @Body() updateUserDto: UpdateUserDto,
+    @Body(ValidationPipe) updateUserDto: UpdateUserDto,
     @UploadedFile(FileValidationPipe) file: Express.Multer.File,
     @Req() req: Request,
   ) {

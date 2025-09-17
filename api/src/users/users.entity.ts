@@ -1,3 +1,4 @@
+import Comment from 'src/comments/entities/comment.entity';
 import Movie from 'src/movies/entities/movie.entity';
 import RevokedToken from 'src/revoked-tokens/revoked-tokens.entity';
 import {
@@ -68,4 +69,7 @@ export class User {
 
   @OneToMany(() => RevokedToken, (token) => token.user, { cascade: true })
   revokedTokens: RevokedToken[];
+
+  @OneToMany(() => Comment, (comment) => comment.user, { cascade: true })
+  comments: Comment[];
 }

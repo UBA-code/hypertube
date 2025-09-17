@@ -1,6 +1,7 @@
 import { Exclude } from 'class-transformer';
 import Movie from '../../movies/entities/movie.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { User } from 'src/users/users.entity';
 
 export default class CommentDto {
   @ApiProperty()
@@ -10,13 +11,7 @@ export default class CommentDto {
   content: string;
 
   @ApiProperty()
-  username: string;
-
-  @ApiProperty()
-  userId: number;
-
-  @ApiProperty()
-  userAvatar: string;
+  user: User;
 
   @Exclude()
   movie: Movie;

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { log } from 'console';
 
@@ -32,7 +32,7 @@ export class MailsService {
       return { message: 'Email sent successfully' };
     } catch (error) {
       console.error('Failed to send email:', error);
-      throw new Error('Failed to send email');
+      throw new BadRequestException('Failed to send email');
     }
   }
 

@@ -18,6 +18,7 @@ export class UserDto {
   @ApiProperty()
   @IsEmail()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @MaxLength(254)
   email: string;
 
   @ApiProperty()
@@ -56,5 +57,6 @@ export class UserDto {
     },
   )
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @MaxLength(254)
   password: string;
 }

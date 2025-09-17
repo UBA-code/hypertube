@@ -49,6 +49,9 @@ export class JwtGuard extends AuthGuard('jwt') {
 
     const user = await this.userService.findOneBy({ id: decodedToken.sub });
 
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
     if (
       !user.verified &&
       req.originalUrl.startsWith('/auth/verify-email/') === false
