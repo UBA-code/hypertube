@@ -124,7 +124,7 @@ export class MoviesService {
               genres: movie.genres,
               duration: movie.runtime,
               coverImage: movie.medium_cover_image,
-              isWatched: user.watchedMovies.some(
+              isWatched: user?.watchedMovies.some(
                 (watchedMovie) => watchedMovie.imdbId === movie.imdb_code,
               ),
               synopsis: movie.synopsis,
@@ -195,7 +195,7 @@ export class MoviesService {
           genres: movie.genre_ids.map((id) => tmdbGenres[id] || 'Unknown'),
           duration: 0,
           synopsis: movie.overview,
-          isWatched: user.watchedMovies.some(
+          isWatched: user?.watchedMovies.some(
             (watchedMovie) => watchedMovie.imdbId === movie.id.toString(),
           ),
           cast: {
@@ -271,11 +271,11 @@ export class MoviesService {
             !filterByRating),
       )
       .map((movie) => {
-        movie.isFavorite = user.favoriteMovies.some(
+        movie.isFavorite = user?.favoriteMovies.some(
           (favMovie) =>
             favMovie.title === movie.title && favMovie.year === movie.year,
         );
-        movie.isWatched = user.watchedMovies.some(
+        movie.isWatched = user?.watchedMovies.some(
           (watchedMovie) => watchedMovie.imdbId === movie.imdbId,
         );
         return movie;
@@ -294,6 +294,10 @@ export class MoviesService {
       movies: mergedMovies, //# merge the two results, keeping only unique movies
       totalResults: mergedMovies.length,
     };
+  }
+
+  async getTopMovies() {
+    return await this.search(null, '', 1, 'like_count', '');
   }
 
   async getMovieDetailsByImdbId(

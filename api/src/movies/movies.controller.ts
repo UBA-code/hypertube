@@ -14,10 +14,17 @@ import { MoviesService } from './movies.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
 import { Request, Response } from 'express';
+import { SkipAuth } from 'src/auth/decorators/skip-auth.decorator';
 
 @Controller('movies')
 export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
+
+  @SkipAuth()
+  @Get('top-movies')
+  async getTopMovies(): Promise<MoviesSearchResponse> {
+    return await this.moviesService.getTopMovies();
+  }
 
   @Get('search')
   @ApiOperation({ summary: 'Search for movies' })

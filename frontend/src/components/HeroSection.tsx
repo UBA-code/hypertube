@@ -26,7 +26,7 @@ const HeroSection: React.FC = () => {
     const fetchFeaturedMovie = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/movies/popular?page=1",
+          "http://localhost:3000/movies/top-movies",
           {
             method: "GET",
             headers: {
@@ -130,8 +130,7 @@ const HeroSection: React.FC = () => {
                 {loading ? (
                   <div className="bg-gray-700 animate-pulse h-6 w-48 rounded mx-auto"></div>
                 ) : (
-                  `${featuredMovie?.title || "Featured Movie"} (${
-                    featuredMovie?.year || "2024"
+                  `${featuredMovie?.title || "Featured Movie"} (${featuredMovie?.year || "2024"
                   })`
                 )}
               </h3>
@@ -151,7 +150,7 @@ const HeroSection: React.FC = () => {
                   </span>
                 )}
               </div>
-              <div className="flex justify-center space-x-4">
+              {/* <div className="flex justify-center space-x-4">
                 <button className="bg-gray-700 hover:bg-gray-600 p-2 rounded-full">
                   <FaHeart />
                 </button>
@@ -161,7 +160,7 @@ const HeroSection: React.FC = () => {
                 <button className="bg-gray-700 hover:bg-gray-600 p-2 rounded-full">
                   <MdDownload />
                 </button>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
