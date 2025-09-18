@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MoviesService } from 'src/movies/movies.service';
 import { UsersService } from 'src/users/users.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import CommentDto from './dto/comments.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager/dist/cache.constants';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class CommentsService {
@@ -12,7 +15,17 @@ export class CommentsService {
     private commentRepository: Repository<Comment>,
     private moviesService: MoviesService,
     private usersService: UsersService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async getCommentsByUserId(userId: number): Promise<CommentDto[]> {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['comments'],
+    });
+
+    return user.comments;
+  }
 
   async getCommentsByImdbId(
     imdbId: string,
@@ -56,6 +69,7 @@ export class CommentsService {
     comment.user = user;
 
     await this.commentRepository.save(comment);
+    await this.cacheManager.clear();
     return 'Comment added successfully';
   }
 
@@ -75,6 +89,7 @@ export class CommentsService {
     }
 
     await this.commentRepository.remove(comment);
+    await this.cacheManager.clear();
     return 'Comment deleted successfully';
   }
 }

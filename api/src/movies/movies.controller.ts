@@ -15,6 +15,7 @@ import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
 import { Request, Response } from 'express';
 import { SkipAuth } from 'src/auth/decorators/skip-auth.decorator';
+import { CacheKey } from '@nestjs/cache-manager';
 
 @Controller('movies')
 export class MoviesController {
@@ -179,6 +180,7 @@ export class MoviesController {
       };
   }
 
+  @CacheKey('favorite-movies')
   @Get('/library/favorites')
   async getFavoritesMovies(@Req() req: Request) {
     return await this.moviesService.getFavoritesMovies(req['user']['id']);

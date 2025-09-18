@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -26,6 +27,8 @@ import * as fs from 'fs';
 import { join } from 'path';
 import SubtitleDto from './dto/subtitles.dto';
 import { plainToInstance } from 'class-transformer';
+import { CACHE_MANAGER } from '@nestjs/cache-manager/dist/cache.constants';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class MoviesService {
@@ -35,6 +38,7 @@ export class MoviesService {
     @InjectRepository(Genre)
     private genreRepository: Repository<Genre>,
     private usersService: UsersService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async createMovie(movieData: Partial<Movie>): Promise<Movie> {
@@ -533,6 +537,7 @@ export class MoviesService {
     }
 
     await this.usersService.saveUser(user);
+    await this.cacheManager.del(`favorite-movies`);
   }
 
   convertToMovieDto(movie: Movie): MovieDto {

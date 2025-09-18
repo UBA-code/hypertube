@@ -53,7 +53,7 @@ export class CommentsController {
     @Query('sortBy', new DefaultValuePipe('DESC'))
     sortBy: 'DESC' | 'ASC' = 'DESC',
   ): Promise<CommentDto> {
-    if (sortBy !== 'DESC' && sortBy !== 'ASC') {
+    if (!['DESC', 'ASC'].includes(sortBy)) {
       throw new BadRequestException(
         'Invalid sortBy value. Use "DESC" or "ASC".',
       );
@@ -73,7 +73,7 @@ export class CommentsController {
     if (!payload.content) {
       throw new BadRequestException('Content is required');
     }
-    return this.commentsService.addComment(
+    return await this.commentsService.addComment(
       req.user['id'],
       movieImdbId,
       payload.content,
@@ -85,6 +85,9 @@ export class CommentsController {
     @Req() req: Request,
     @Param('commentId') commentId: number,
   ) {
-    return this.commentsService.deleteCommentById(req.user['id'], commentId);
+    return await this.commentsService.deleteCommentById(
+      req.user['id'],
+      commentId,
+    );
   }
 }

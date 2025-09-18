@@ -67,7 +67,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     RevokedTokensModule,
     CommentsModule,
     TorrentModule,
-    CacheModule.register({ isGlobal: true, ttl: 600000 }),
+    CacheModule.register({ isGlobal: true, ttl: 1 * 60 * 60 * 1000 }), // 1 hour cache in milliseconds
   ],
   controllers: [AppController],
   providers: [
