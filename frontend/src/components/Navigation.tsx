@@ -39,12 +39,6 @@ const Navigation: React.FC<NavigationProps> = ({
             Features
           </button>
           <button
-            onClick={() => handleSmoothScroll("how-it-works")}
-            className="hover:text-red-500 transition"
-          >
-            How It Works
-          </button>
-          <button
             onClick={() => handleSmoothScroll("testimonials")}
             className="hover:text-red-500 transition"
           >

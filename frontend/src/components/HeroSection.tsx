@@ -95,13 +95,6 @@ const HeroSection: React.FC = () => {
           >
             Start Watching Free
           </button>
-          <button
-            onClick={handleHowItWorks}
-            className="px-8 py-4 bg-gray-800 rounded-lg text-lg font-semibold hover:bg-gray-700 transition flex items-center"
-          >
-            <span>How It Works</span>
-            <FaArrowRight className="ml-2" />
-          </button>
         </div>
       </div>
       <div className="md:w-1/2 flex justify-center">
