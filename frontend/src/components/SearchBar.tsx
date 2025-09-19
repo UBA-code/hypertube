@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaTimes } from "react-icons/fa";
+import { FaSearch, FaSignOutAlt, FaTimes } from "react-icons/fa";
 import api from "../services/api.ts";
 
 interface SearchResult {
@@ -184,8 +184,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div ref={searchRef} className={className}>
-      <form onSubmit={handleSearchSubmit}>
+    <div ref={searchRef} className={`flex items-center ${className} max-w-full w-full gap-2 sm:gap-4`}>
+      <form onSubmit={handleSearchSubmit} className="flex-1 min-w-0">
         <div className="relative">
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
             <FaSearch />
@@ -230,8 +230,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   key={movie.imdbId}
                   onClick={() => handleResultClick(movie.imdbId)}
                   className={`w-full px-4 py-3 transition-colors text-left flex items-center space-x-3 ${index === selectedIndex
-                      ? "bg-red-600 text-white"
-                      : "hover:bg-gray-700 text-white"
+                    ? "bg-red-600 text-white"
+                    : "hover:bg-gray-700 text-white"
                     }`}
                 >
                   <div className="w-12 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0">
@@ -256,8 +256,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
                     </h4>
                     <p
                       className={`text-sm ${index === selectedIndex
-                          ? "text-red-100"
-                          : "text-gray-400"
+                        ? "text-red-100"
+                        : "text-gray-400"
                         }`}
                     >
                       {movie.year} • ⭐{" "}
@@ -292,7 +292,45 @@ const SearchBar: React.FC<SearchBarProps> = ({
           ) : null}
         </div>
       )}
-    </div>
+      <button
+        onClick={async () => {
+          try {
+            const response = await api.post("/auth/logout");
+            // Logout successful, redirect to login page
+            navigate("/login");
+          } catch (error) {
+            console.error("Logout error:", error);
+            // Even if there's a network error, redirect to login
+            navigate("/login");
+          }
+        }}
+        className="
+          flex items-center justify-center gap-2 
+          px-3 py-2.5 sm:px-4 sm:py-3 
+          bg-red-600 hover:bg-red-700 active:bg-red-800 
+          text-white font-medium text-sm sm:text-base
+          rounded-lg shadow-lg hover:shadow-xl
+          transition-all duration-200 ease-in-out
+          transform hover:scale-105 active:scale-95
+          border border-red-500 hover:border-red-400
+          min-w-0 flex-shrink-0
+          group relative overflow-hidden
+          before:absolute before:inset-0 before:bg-gradient-to-r 
+          before:from-transparent before:via-white/10 before:to-transparent
+          before:translate-x-[-100%] hover:before:translate-x-[100%]
+          before:transition-transform before:duration-700
+        "
+        title="Sign Out"
+      >
+        <FaSignOutAlt className="text-base sm:text-lg flex-shrink-0 transition-transform duration-200 group-hover:rotate-12" />
+        <span className="hidden xs:inline-block sm:inline-block whitespace-nowrap">
+          Sign Out
+        </span>
+        <span className="xs:hidden sm:hidden sr-only">
+          Sign Out
+        </span>
+      </button>
+    </div >
   );
 };
 

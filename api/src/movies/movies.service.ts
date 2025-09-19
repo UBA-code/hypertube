@@ -124,7 +124,7 @@ export class MoviesService {
               genres: movie.genres,
               duration: movie.runtime,
               coverImage: movie.medium_cover_image,
-              isWatched: user.watchedMovies.some(
+              isWatched: user?.watchedMovies.some(
                 (watchedMovie) => watchedMovie.imdbId === movie.imdb_code,
               ),
               synopsis: movie.synopsis,
@@ -195,7 +195,7 @@ export class MoviesService {
           genres: movie.genre_ids.map((id) => tmdbGenres[id] || 'Unknown'),
           duration: 0,
           synopsis: movie.overview,
-          isWatched: user.watchedMovies.some(
+          isWatched: user?.watchedMovies.some(
             (watchedMovie) => watchedMovie.imdbId === movie.id.toString(),
           ),
           cast: {
@@ -271,11 +271,11 @@ export class MoviesService {
             !filterByRating),
       )
       .map((movie) => {
-        movie.isFavorite = user.favoriteMovies.some(
+        movie.isFavorite = user?.favoriteMovies.some(
           (favMovie) =>
             favMovie.title === movie.title && favMovie.year === movie.year,
         );
-        movie.isWatched = user.watchedMovies.some(
+        movie.isWatched = user?.watchedMovies.some(
           (watchedMovie) => watchedMovie.imdbId === movie.imdbId,
         );
         return movie;
@@ -296,6 +296,10 @@ export class MoviesService {
     };
   }
 
+  async getTopMovies() {
+    return await this.search(null, '', 1, 'like_count', '');
+  }
+
   async getMovieDetailsByImdbId(
     userId: number,
     imdbId: string,
@@ -308,6 +312,7 @@ export class MoviesService {
     );
     movieDto.isFavorite = await this.isFavoriteMovie(userId, movieDto.imdbId);
     movieDto.isWatched = await this.isWatchedMovie(userId, movieDto.imdbId);
+    movieDto.comments = undefined; // comments are fetched separately
     return movieDto;
   }
 
@@ -315,7 +320,15 @@ export class MoviesService {
     let searchResult: MovieDto;
     const movie = await this.movieRepository.findOne({
       where: { imdbId },
-      relations: ['genres', 'actors', 'directors', 'producers', 'torrents'],
+      relations: [
+        'genres',
+        'actors',
+        'directors',
+        'producers',
+        'torrents',
+        'comments',
+        'subtitles',
+      ],
     });
 
     if (movie) {
@@ -556,6 +569,7 @@ export class MoviesService {
       })),
       subtitles: movie.subtitles,
       comments: movie.comments,
+      commentsCount: movie.comments ? movie.comments.length : 0,
       isFavorite: false, // This will be set later based on user data
     };
   }

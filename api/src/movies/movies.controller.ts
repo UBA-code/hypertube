@@ -9,15 +9,28 @@ import {
   Query,
   Req,
   Res,
+  ValidationPipe,
 } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import MoviesSearchResponse, { MovieDto } from './types/moviesSearchResponse';
 import { Request, Response } from 'express';
+import { SkipAuth } from 'src/auth/decorators/skip-auth.decorator';
+import { RestFullCreateCommentDto } from 'src/comments/dto/createComment.dto';
+import { CommentsService } from 'src/comments/comments.service';
 
 @Controller('movies')
 export class MoviesController {
-  constructor(private readonly moviesService: MoviesService) {}
+  constructor(
+    private readonly moviesService: MoviesService,
+    private readonly commentsService: CommentsService,
+  ) {}
+
+  @SkipAuth()
+  @Get('top-movies')
+  async getTopMovies(): Promise<MoviesSearchResponse> {
+    return await this.moviesService.getTopMovies();
+  }
 
   @Get('search')
   @ApiOperation({ summary: 'Search for movies' })
@@ -85,7 +98,7 @@ export class MoviesController {
     );
   }
 
-  @Get('popular')
+  @Get(['', 'popular'])
   @ApiOperation({ summary: 'Get popular movies' })
   @ApiQuery({
     name: 'page',
@@ -189,5 +202,18 @@ export class MoviesController {
   @Get('subtitles/:imdbId')
   async getAvailableSubtitles(@Param('imdbId') imdbId: string) {
     return await this.moviesService.getAllAvailableSubtitles(imdbId);
+  }
+
+  @Post(':imdbId/comments')
+  async postComment(
+    @Req() req: Request,
+    @Param('imdbId') imdbId: string,
+    @Body(ValidationPipe) paylaod: RestFullCreateCommentDto,
+  ) {
+    return await this.commentsService.addComment(
+      req.user['id'],
+      paylaod.movie_id,
+      paylaod.content,
+    );
   }
 }

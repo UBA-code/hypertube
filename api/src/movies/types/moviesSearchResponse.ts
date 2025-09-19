@@ -118,6 +118,8 @@ export class MovieDto {
   @ApiProperty()
   comments: CommentDto[];
   @ApiProperty()
+  commentsCount?: number;
+  @ApiProperty()
   streamUrl?: string;
   @ApiProperty()
   isWatched?: boolean;

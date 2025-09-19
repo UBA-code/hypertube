@@ -3,7 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MoviesService } from 'src/movies/movies.service';
 import { UsersService } from 'src/users/users.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 @Injectable()
 export class CommentsService {
@@ -13,6 +17,36 @@ export class CommentsService {
     private moviesService: MoviesService,
     private usersService: UsersService,
   ) {}
+
+  async getLatestComments() {
+    const comments = await this.commentRepository.find({
+      relations: ['user'],
+      order: {
+        createdAt: 'DESC',
+      },
+      take: 10,
+    });
+    const cleanComments = comments.map((comment) => {
+      const { user, ...rest } = comment;
+      return {
+        ...rest,
+        userName: user.userName,
+      };
+    });
+    return cleanComments;
+  }
+
+  async getCommentsByUserId(userId: number) {
+    const user = await this.usersService.findOne({
+      where: { id: userId },
+      relations: ['comments'],
+    });
+
+    return user.comments.map((comment) => ({
+      ...comment,
+      userName: user.userName,
+    }));
+  }
 
   async getCommentsByImdbId(
     imdbId: string,
@@ -57,6 +91,30 @@ export class CommentsService {
 
     await this.commentRepository.save(comment);
     return 'Comment added successfully';
+  }
+
+  async updateCommentContent(
+    userId: number,
+    commentId: number,
+    content: string,
+  ) {
+    const comment = await this.commentRepository.findOne({
+      where: { id: commentId },
+      relations: ['user'],
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    } else if (comment.user.id !== userId) {
+      throw new BadRequestException(
+        'You do not have permission to edit this comment',
+      );
+    }
+
+    comment.content = content;
+
+    await this.commentRepository.save(comment);
+    return 'Comment updated successfully';
   }
 
   async deleteCommentById(userId: number, commentId: number) {
