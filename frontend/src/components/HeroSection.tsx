@@ -80,7 +80,7 @@ const HeroSection: React.FC = () => {
         </p>
 
         {/* Search Bar */}
-        <div className="mb-8">
+        <div className="mb-8 w-full">
           <SearchBar
             placeholder="Search for movies, TV shows..."
             className="relative w-full max-w-lg"

@@ -679,7 +679,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     setSubmitting(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/movies/${movieImdbId}/comments`,
+        `http://localhost:3000/movies/${movieImdbId}/comments/add`,
         {
           method: "POST",
           headers: {
@@ -730,9 +730,8 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
           onClick={handleSortToggle}
           disabled={loading}
           className="flex items-center px-3 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed rounded-lg transition-colors text-sm font-medium"
-          title={`Sort comments ${
-            sortOrder === "DESC" ? "oldest first" : "newest first"
-          }`}
+          title={`Sort comments ${sortOrder === "DESC" ? "oldest first" : "newest first"
+            }`}
         >
           {sortOrder === "DESC" ? (
             <>

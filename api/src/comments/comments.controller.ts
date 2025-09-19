@@ -64,7 +64,7 @@ export class CommentsController {
     );
   }
 
-  @Post(':movieImdbId/comments')
+  @Post(':movieImdbId/comments/add')
   async addComment(
     @Req() req: Request,
     @Param('movieImdbId') movieImdbId: string,

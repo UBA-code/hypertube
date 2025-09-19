@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaSort } from "react-icons/fa";
 import { MdTrendingUp } from "react-icons/md";
 import MovieCard from "./MovieCard";
 
@@ -48,6 +48,16 @@ interface PopularMoviesSectionProps {
   activeTab: string;
 }
 
+// Available sort options based on backend API
+type SortOption = 'like_count' | 'title' | 'year' | 'rating';
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'like_count', label: 'Most Popular' },
+  { value: 'rating', label: 'Highest Rated' },
+  { value: 'year', label: 'Newest' },
+  { value: 'title', label: 'Title (A-Z)' },
+];
+
 // Loading Skeleton Component
 const PopularLoadingSkeleton: React.FC = () => (
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -72,6 +82,7 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('like_count');
 
   // Function to fetch popular movies
   const fetchPopularMovies = useCallback(
@@ -85,7 +96,7 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         setError(null);
 
         const response = await fetch(
-          `http://localhost:3000/movies/popular?page=${page}`,
+          `http://localhost:3000/movies/popular?page=${page}&sortBy=${sortBy}`,
           {
             method: "GET",
             headers: {
@@ -132,7 +143,7 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         setLoadingMore(false);
       }
     },
-    []
+    [sortBy]
   );
 
   // Initial load when component mounts and tab is active
@@ -145,6 +156,21 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
       setInitialized(true);
     }
   }, [activeTab, initialized, fetchPopularMovies]);
+
+  // Refetch when sort changes
+  useEffect(() => {
+    if (activeTab === "popular" && initialized) {
+      setMovies([]);
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchPopularMovies(1, false);
+    }
+  }, [sortBy, activeTab, initialized, fetchPopularMovies]);
+
+  // Handle sort change
+  const handleSortChange = (newSort: SortOption) => {
+    setSortBy(newSort);
+  };
 
   // Infinite scroll handler with throttling
   useEffect(() => {
@@ -212,7 +238,7 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         clearTimeout(scrollTimeout);
       }
     };
-  }, [activeTab, hasMore, loading, loadingMore, fetchPopularMovies]);
+  }, [activeTab, hasMore, loading, loadingMore, fetchPopularMovies, sortBy]);
 
   if (activeTab !== "popular") {
     return null;
@@ -225,14 +251,21 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
           <MdTrendingUp className="mr-2 text-red-500" />
           Popular Movies
         </h2>
-        {/* <div className="flex space-x-2">
-          <button className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition">
-            Movies
-          </button>
-          <button className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition">
-            TV Shows
-          </button>
-        </div> */}
+
+        {/* Sort Dropdown */}
+        <div className="flex items-center space-x-3">
+          <select
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value as SortOption)}
+            className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-600 hover:border-gray-500 focus:border-red-500 focus:outline-none transition"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Error State */}
