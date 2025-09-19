@@ -5,7 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Put,
+  Patch,
   Req,
   UploadedFile,
   UseInterceptors,
@@ -83,7 +83,7 @@ export class UsersController {
     type: UserPublicDataDto,
   })
   @UseInterceptors(UploadInterceptor('profilePicture'))
-  @Put()
+  @Patch()
   async updateUserById(
     @Body(ValidationPipe) updateUserDto: UpdateUserDto,
     @UploadedFile(FileValidationPipe) file: Express.Multer.File,

@@ -166,7 +166,7 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
       }
 
       const response = await fetch("http://localhost:3000/users", {
-        method: "PUT",
+        method: "PATCH",
         credentials: "include",
         body: formDataToSend,
       });
