@@ -84,6 +84,7 @@ const HeroSection: React.FC = () => {
           <SearchBar
             placeholder="Search for movies, TV shows..."
             className="relative w-full max-w-lg"
+            includeSignOut={false}
           />
         </div>
 

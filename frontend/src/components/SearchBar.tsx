@@ -15,12 +15,14 @@ interface SearchBarProps {
   placeholder?: string;
   className?: string;
   defaultValue?: string; // Add default value prop
+  includeSignOut?: boolean; // Whether to include the sign-out button
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = "Search movies...",
   className = "relative w-full max-w-md",
   defaultValue = "",
+  includeSignOut = true,
 }) => {
   const [searchQuery, setSearchQuery] = useState(defaultValue);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -292,44 +294,47 @@ const SearchBar: React.FC<SearchBarProps> = ({
           ) : null}
         </div>
       )}
-      <button
-        onClick={async () => {
-          try {
-            const response = await api.post("/auth/logout");
-            // Logout successful, redirect to login page
-            navigate("/login");
-          } catch (error) {
-            console.error("Logout error:", error);
-            // Even if there's a network error, redirect to login
-            navigate("/login");
-          }
-        }}
-        className="
-          flex items-center justify-center gap-2 
-          px-3 py-2.5 sm:px-4 sm:py-3 
-          bg-red-600 hover:bg-red-700 active:bg-red-800 
-          text-white font-medium text-sm sm:text-base
-          rounded-lg shadow-lg hover:shadow-xl
-          transition-all duration-200 ease-in-out
-          transform hover:scale-105 active:scale-95
-          border border-red-500 hover:border-red-400
-          min-w-0 flex-shrink-0
-          group relative overflow-hidden
-          before:absolute before:inset-0 before:bg-gradient-to-r 
-          before:from-transparent before:via-white/10 before:to-transparent
-          before:translate-x-[-100%] hover:before:translate-x-[100%]
-          before:transition-transform before:duration-700
-        "
-        title="Sign Out"
-      >
-        <FaSignOutAlt className="text-base sm:text-lg flex-shrink-0 transition-transform duration-200 group-hover:rotate-12" />
-        <span className="hidden xs:inline-block sm:inline-block whitespace-nowrap">
-          Sign Out
-        </span>
-        <span className="xs:hidden sm:hidden sr-only">
-          Sign Out
-        </span>
-      </button>
+      {
+        includeSignOut &&
+        <button
+          onClick={async () => {
+            try {
+              const response = await api.post("/auth/logout");
+              // Logout successful, redirect to login page
+              navigate("/login");
+            } catch (error) {
+              console.error("Logout error:", error);
+              // Even if there's a network error, redirect to login
+              navigate("/login");
+            }
+          }}
+          className="
+      flex items-center justify-center gap-2 
+      px-3 py-2.5 sm:px-4 sm:py-3 
+      bg-red-600 hover:bg-red-700 active:bg-red-800 
+      text-white font-medium text-sm sm:text-base
+      rounded-lg shadow-lg hover:shadow-xl
+      transition-all duration-200 ease-in-out
+      transform hover:scale-105 active:scale-95
+      border border-red-500 hover:border-red-400
+      min-w-0 flex-shrink-0
+      group relative overflow-hidden
+      before:absolute before:inset-0 before:bg-gradient-to-r 
+      before:from-transparent before:via-white/10 before:to-transparent
+      before:translate-x-[-100%] hover:before:translate-x-[100%]
+      before:transition-transform before:duration-700
+      "
+          title="Sign Out"
+        >
+          <FaSignOutAlt className="text-base sm:text-lg flex-shrink-0 transition-transform duration-200 group-hover:rotate-12" />
+          <span className="hidden xs:inline-block sm:inline-block whitespace-nowrap">
+            Sign Out
+          </span>
+          <span className="xs:hidden sm:hidden sr-only">
+            Sign Out
+          </span>
+        </button>
+      }
     </div >
   );
 };
