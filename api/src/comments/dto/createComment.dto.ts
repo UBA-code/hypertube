@@ -9,3 +9,15 @@ export default class CreateCommentDto {
   @MaxLength(500)
   content: string;
 }
+
+export class RestFullCreateCommentDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  @MaxLength(500)
+  content: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  movie_id: string;
+}

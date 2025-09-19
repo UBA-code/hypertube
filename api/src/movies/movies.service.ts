@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -27,8 +26,6 @@ import * as fs from 'fs';
 import { join } from 'path';
 import SubtitleDto from './dto/subtitles.dto';
 import { plainToInstance } from 'class-transformer';
-import { CACHE_MANAGER } from '@nestjs/cache-manager/dist/cache.constants';
-import { Cache } from 'cache-manager';
 
 @Injectable()
 export class MoviesService {
@@ -38,7 +35,6 @@ export class MoviesService {
     @InjectRepository(Genre)
     private genreRepository: Repository<Genre>,
     private usersService: UsersService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async createMovie(movieData: Partial<Movie>): Promise<Movie> {
@@ -316,6 +312,7 @@ export class MoviesService {
     );
     movieDto.isFavorite = await this.isFavoriteMovie(userId, movieDto.imdbId);
     movieDto.isWatched = await this.isWatchedMovie(userId, movieDto.imdbId);
+    movieDto.comments = undefined; // comments are fetched separately
     return movieDto;
   }
 
@@ -323,7 +320,15 @@ export class MoviesService {
     let searchResult: MovieDto;
     const movie = await this.movieRepository.findOne({
       where: { imdbId },
-      relations: ['genres', 'actors', 'directors', 'producers', 'torrents'],
+      relations: [
+        'genres',
+        'actors',
+        'directors',
+        'producers',
+        'torrents',
+        'comments',
+        'subtitles',
+      ],
     });
 
     if (movie) {
@@ -537,7 +542,6 @@ export class MoviesService {
     }
 
     await this.usersService.saveUser(user);
-    await this.cacheManager.del(`favorite-movies`);
   }
 
   convertToMovieDto(movie: Movie): MovieDto {
@@ -565,6 +569,7 @@ export class MoviesService {
       })),
       subtitles: movie.subtitles,
       comments: movie.comments,
+      commentsCount: movie.comments ? movie.comments.length : 0,
       isFavorite: false, // This will be set later based on user data
     };
   }

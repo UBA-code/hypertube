@@ -21,8 +21,6 @@ import { CommentsModule } from './comments/comments.module';
 import { TorrentModule } from './torrent/torrent.module';
 import Producer from './movies/entities/Producer.entity';
 import { ScheduleModule } from '@nestjs/schedule';
-import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -67,15 +65,8 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     RevokedTokensModule,
     CommentsModule,
     TorrentModule,
-    CacheModule.register({ isGlobal: true, ttl: 1 * 60 * 60 * 1000 }), // 1 hour cache in milliseconds
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: CacheInterceptor,
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

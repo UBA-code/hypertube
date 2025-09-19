@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MoviesService } from 'src/movies/movies.service';
 import { UsersService } from 'src/users/users.service';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import CommentDto from './dto/comments.dto';
-import { CACHE_MANAGER } from '@nestjs/cache-manager/dist/cache.constants';
-import { Cache } from 'cache-manager';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 @Injectable()
 export class CommentsService {
@@ -15,16 +16,36 @@ export class CommentsService {
     private commentRepository: Repository<Comment>,
     private moviesService: MoviesService,
     private usersService: UsersService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async getCommentsByUserId(userId: number): Promise<CommentDto[]> {
+  async getLatestComments() {
+    const comments = await this.commentRepository.find({
+      relations: ['user'],
+      order: {
+        createdAt: 'DESC',
+      },
+      take: 10,
+    });
+    const cleanComments = comments.map((comment) => {
+      const { user, ...rest } = comment;
+      return {
+        ...rest,
+        userName: user.userName,
+      };
+    });
+    return cleanComments;
+  }
+
+  async getCommentsByUserId(userId: number) {
     const user = await this.usersService.findOne({
       where: { id: userId },
       relations: ['comments'],
     });
 
-    return user.comments;
+    return user.comments.map((comment) => ({
+      ...comment,
+      userName: user.userName,
+    }));
   }
 
   async getCommentsByImdbId(
@@ -69,8 +90,31 @@ export class CommentsService {
     comment.user = user;
 
     await this.commentRepository.save(comment);
-    await this.cacheManager.clear();
     return 'Comment added successfully';
+  }
+
+  async updateCommentContent(
+    userId: number,
+    commentId: number,
+    content: string,
+  ) {
+    const comment = await this.commentRepository.findOne({
+      where: { id: commentId },
+      relations: ['user'],
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    } else if (comment.user.id !== userId) {
+      throw new BadRequestException(
+        'You do not have permission to edit this comment',
+      );
+    }
+
+    comment.content = content;
+
+    await this.commentRepository.save(comment);
+    return 'Comment updated successfully';
   }
 
   async deleteCommentById(userId: number, commentId: number) {
@@ -89,7 +133,6 @@ export class CommentsService {
     }
 
     await this.commentRepository.remove(comment);
-    await this.cacheManager.clear();
     return 'Comment deleted successfully';
   }
 }
