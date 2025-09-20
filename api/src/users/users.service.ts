@@ -118,8 +118,11 @@ export class UsersService {
   }
 
   async findOneOrCreateByUsername(userName: string, user: User): Promise<User> {
-    const userFound = await this.usersRepository.findOneBy({ userName });
-    if (userFound && userFound.authType === user.authType) {
+    const userFound = await this.usersRepository.findOneBy({
+      userName,
+      authType: user.authType,
+    });
+    if (userFound) {
       return userFound;
     }
     return await this.usersRepository.save(user);
