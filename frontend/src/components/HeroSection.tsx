@@ -25,7 +25,7 @@ const HeroSection: React.FC = () => {
     const fetchFeaturedMovie = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/movies/top-movies",
+          `${"http://localhost:3000/api"}/movies/top-movies`,
           {
             method: "GET",
             headers: {

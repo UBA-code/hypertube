@@ -85,7 +85,7 @@ const LibrarySection: React.FC<LibrarySectionProps> = ({
       setError(null);
 
       const response = await fetch(
-        "http://localhost:3000/movies/library/favorites",
+        `${"http://localhost:3000/api"}/movies/library/favorites`,
         {
           method: "GET",
           headers: {

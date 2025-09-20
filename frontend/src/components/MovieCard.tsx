@@ -59,7 +59,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/movies/favorite/${movie.imdbId}`,
+        `${"http://localhost:3000/api"}/movies/favorite/${movie.imdbId}`,
         {
           method: "POST",
           headers: {

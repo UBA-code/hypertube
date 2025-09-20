@@ -34,7 +34,7 @@ export class GitlabStrategy extends PassportStrategy(Strategy) {
       user,
     );
 
-    const accessToken = await this.authService.createAccessToken(user);
+    const accessToken = await this.authService.createAccessToken(createdUser);
 
     return { accessToken, user: createdUser };
   }

@@ -52,9 +52,10 @@ export class JwtGuard extends AuthGuard('jwt') {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
+
     if (
       !user.verified &&
-      req.originalUrl.startsWith('/auth/verify-email/') === false
+      req.originalUrl.startsWith(`/api/auth/verify-email/`) === false
     ) {
       console.log('-'.repeat(10));
       console.log('User is not verified');

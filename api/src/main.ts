@@ -47,6 +47,7 @@ async function bootstrap() {
   if (!existsSync(uploadPath)) {
     mkdirSync(uploadPath);
   }
+  app.setGlobalPrefix('api');
   await app.listen(3000, '0.0.0.0');
 }
 bootstrap();

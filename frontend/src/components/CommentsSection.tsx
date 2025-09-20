@@ -186,7 +186,7 @@ const UserProfileModal: React.FC<{
         setError(null);
         try {
           const response = await fetch(
-            `http://localhost:3000/users/${userId}`,
+            `${"http://localhost:3000/api"}/users/${userId}`,
             {
               method: "GET",
               headers: {
@@ -393,7 +393,7 @@ const CommentItem: React.FC<{
 
     try {
       const response = await fetch(
-        `http://localhost:3000/movies/comments/${comment.id}`,
+        `${"http://localhost:3000/api"}/movies/comments/${comment.id}`,
         {
           method: "DELETE",
           headers: {
@@ -543,7 +543,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
         setError(null);
 
         const response = await fetch(
-          `http://localhost:3000/movies/${movieImdbId}/comments?page=${page}&limit=10&sortBy=${sortOrder}`,
+          `${"http://localhost:3000/api"}/movies/${movieImdbId}/comments?page=${page}&limit=10&sortBy=${sortOrder}`,
           {
             method: "GET",
             headers: {
@@ -679,7 +679,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     setSubmitting(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/movies/${movieImdbId}/comments/add`,
+        `${"http://localhost:3000/api"}/movies/${movieImdbId}/comments/add`,
         {
           method: "POST",
           headers: {

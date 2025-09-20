@@ -108,7 +108,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement GitHub OAuth
       console.log("GitHub OAuth initiated");
-      window.location.href = "http://localhost:3000/auth/github";
+      window.location.href = `${"http://localhost:3000/api"}/auth/github`;
     } catch (error) {
       console.error("GitHub auth failed:", error);
       setIsLoading(false);
@@ -120,7 +120,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement Google OAuth
       console.log("Google OAuth initiated");
-      window.location.href = "http://localhost:3000/auth/google";
+      window.location.href = `${"http://localhost:3000/api"}/auth/google`;
     } catch (error) {
       console.error("Google auth failed:", error);
       setIsLoading(false);
@@ -132,7 +132,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement 42 OAuth
       console.log("42 OAuth initiated");
-      window.location.href = "http://localhost:3000/auth/42";
+      window.location.href = `${"http://localhost:3000/api"}/auth/42`;
     } catch (error) {
       console.error("42 auth failed:", error);
       setIsLoading(false);
@@ -144,7 +144,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement GitLab OAuth
       console.log("GitLab OAuth initiated");
-      window.location.href = "http://localhost:3000/auth/gitlab";
+      window.location.href = `${"http://localhost:3000/api"}/auth/gitlab`;
     } catch (error) {
       console.error("GitLab auth failed:", error);
       setIsLoading(false);
@@ -156,7 +156,7 @@ const RegisterPage: React.FC = () => {
     try {
       // TODO: Implement Discord OAuth
       console.log("Discord OAuth initiated");
-      window.location.href = "http://localhost:3000/auth/discord";
+      window.location.href = `${"http://localhost:3000/api"}/auth/discord`;
     } catch (error) {
       console.error("Discord auth failed:", error);
       setIsLoading(false);
