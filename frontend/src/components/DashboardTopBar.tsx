@@ -1,29 +1,20 @@
 import React from "react";
-import { FaPlay, FaBell, FaUserCircle } from "react-icons/fa";
+import { FaPlay } from "react-icons/fa";
 import SearchBar from "./SearchBar";
 
-interface User {
-  userName: string;
-  firstName?: string;
-  profilePicture?: string;
-}
 
 interface DashboardTopBarProps {
-  currentUser: User | null;
   isMenuOpen?: boolean;
   setIsMenuOpen?: (open: boolean) => void;
   showMobileMenu?: boolean;
   searchDefaultValue?: string;
-  showNotification?: boolean;
 }
 
 const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
-  currentUser,
   isMenuOpen = false,
   setIsMenuOpen,
   showMobileMenu = true,
   searchDefaultValue = "",
-  showNotification = true,
 }) => {
   return (
     <div className="flex items-center justify-between mb-8">

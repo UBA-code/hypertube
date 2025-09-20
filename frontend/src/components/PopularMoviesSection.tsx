@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaSearch, FaSort } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 import { MdTrendingUp } from "react-icons/md";
 import MovieCard from "./MovieCard";
 

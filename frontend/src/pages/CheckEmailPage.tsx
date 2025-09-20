@@ -1,48 +1,44 @@
-import React, { useState } from "react";
-import { FaPlay, FaArrowLeft, FaEnvelope, FaCheckCircle, FaRedo } from "react-icons/fa";
+import React from "react";
+import { FaPlay, FaArrowLeft, FaEnvelope, FaCheckCircle, } from "react-icons/fa";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
-import { AxiosError } from "axios";
 
 const CheckEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email") || "";
-  const [isResending, setIsResending] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
-  const [resendError, setResendError] = useState("");
   const navigate = useNavigate()
 
-  const handleResendEmail = async () => {
-    if (!email) {
-      setResendError("Email address is required to resend verification");
-      return;
-    }
+  // const handleResendEmail = async () => {
+  //   if (!email) {
+  //     setResendError("Email address is required to resend verification");
+  //     return;
+  //   }
 
-    setIsResending(true);
-    setResendError("");
-    setResendSuccess(false);
+  //   setIsResending(true);
+  //   setResendError("");
+  //   setResendSuccess(false);
 
-    try {
-      await api.post("/auth/resend-verification", { email });
-      setResendSuccess(true);
+  //   try {
+  //     await api.post("/auth/resend-verification", { email });
+  //     setResendSuccess(true);
 
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        setResendSuccess(false);
-      }, 5000);
-    } catch (error) {
-      console.error("Failed to resend verification email:", error);
+  //     // Clear success message after 5 seconds
+  //     setTimeout(() => {
+  //       setResendSuccess(false);
+  //     }, 5000);
+  //   } catch (error) {
+  //     console.error("Failed to resend verification email:", error);
 
-      let errorMessage = "Failed to resend verification email. Please try again.";
-      if (error instanceof AxiosError) {
-        errorMessage = error.response?.data?.message || errorMessage;
-      }
+  //     let errorMessage = "Failed to resend verification email. Please try again.";
+  //     if (error instanceof AxiosError) {
+  //       errorMessage = error.response?.data?.message || errorMessage;
+  //     }
 
-      setResendError(errorMessage);
-    } finally {
-      setIsResending(false);
-    }
-  };
+  //     setResendError(errorMessage);
+  //   } finally {
+  //     setIsResending(false);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col">

@@ -299,7 +299,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <button
           onClick={async () => {
             try {
-              const response = await api.post("/auth/logout");
+              await api.post("/auth/logout");
               // Logout successful, redirect to login page
               navigate("/login");
             } catch (error) {

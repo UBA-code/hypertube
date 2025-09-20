@@ -1,17 +1,15 @@
 services:
-  api:
-    build: ./api
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     ports:
       - "3000:3000"
     env_file:
-      - .env.dev
+      - ".env.prod"
     restart: always
     depends_on:
       - db
-    volumes:
-      - ./api:/app
-      - node_modules:/app/node_modules
-      - ../hls:/app/hls
 
   db:
     container_name: postgres
@@ -19,7 +17,7 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - .env.dev
+      - ".env.prod"
     volumes:
       - db_data:/var/lib/postgresql/data
     restart: always
@@ -29,17 +27,8 @@ services:
     restart: always
     ports:
       - 8080:8080
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend/src:/app/src
-    container_name: hypertube-frontend
+    depends_on:
+      - db
 
 volumes:
   db_data:
-  node_modules:

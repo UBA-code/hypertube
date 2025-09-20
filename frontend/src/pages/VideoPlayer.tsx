@@ -9,12 +9,10 @@ import {
   FaExpand,
   FaCompress,
   FaArrowLeft,
-  FaCog,
   FaClosedCaptioning,
 } from "react-icons/fa";
 import "./VideoPlayer.css";
 import api from "../services/api.ts";
-import { AxiosError } from "axios";
 
 interface Subtitle {
   id: number;
