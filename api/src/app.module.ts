@@ -58,6 +58,9 @@ import { ScheduleModule } from '@nestjs/schedule';
       rootPath: join(process.cwd(), 'subtitles'),
       serveRoot: '/subtitles',
     }),
+    ServeStaticModule.forRoot({
+      rootPath: '/app/frontend',
+    }),
     ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,

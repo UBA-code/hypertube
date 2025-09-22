@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlay, FaHeart, FaArrowRight, FaStar } from "react-icons/fa";
-import { MdDownload } from "react-icons/md";
+import { FaPlay, FaStar } from "react-icons/fa";
 import SearchBar from "./SearchBar";
 
 interface Movie {
@@ -26,7 +25,7 @@ const HeroSection: React.FC = () => {
     const fetchFeaturedMovie = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/movies/top-movies",
+          `${"http://localhost:3000/api"}/movies/top-movies`,
           {
             method: "GET",
             headers: {
@@ -54,13 +53,6 @@ const HeroSection: React.FC = () => {
 
   const handleStartWatching = () => {
     navigate("/dashboard");
-  };
-
-  const handleHowItWorks = () => {
-    const element = document.getElementById("how-it-works");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
   };
 
   return (

@@ -11,7 +11,7 @@ import { MdDownload } from "react-icons/md";
 import { RiMovie2Line } from "react-icons/ri";
 import { DashboardTopBar } from "../components";
 import api from "../services/api.ts";
-import { AxiosError } from "axios";
+
 
 interface Movie {
   imdbId: string;
@@ -162,7 +162,7 @@ const SearchResults: React.FC = () => {
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<{
+  const [, setCurrentUser] = useState<{
     userName: string;
     firstName?: string;
     profilePicture?: string;
@@ -297,10 +297,8 @@ const SearchResults: React.FC = () => {
       <div className="container mx-auto px-4 py-6">
         {/* Top Bar */}
         <DashboardTopBar
-          currentUser={currentUser}
           showMobileMenu={false}
           searchDefaultValue={query}
-          showNotification={false}
         />
 
         {/* Search Info */}

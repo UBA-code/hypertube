@@ -9,12 +9,10 @@ import {
   FaExpand,
   FaCompress,
   FaArrowLeft,
-  FaCog,
   FaClosedCaptioning,
 } from "react-icons/fa";
 import "./VideoPlayer.css";
 import api from "../services/api.ts";
-import { AxiosError } from "axios";
 
 interface Subtitle {
   id: number;
@@ -88,7 +86,7 @@ const VideoPlayer: React.FC = () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Get the playlist URL
-        const playlistUrl = `http://localhost:3000/torrent/getStreamPlaylist/${imdbId}/${quality}`;
+        const playlistUrl = `${"http://localhost:3000/api"}/torrent/getStreamPlaylist/${imdbId}/${quality}`;
 
         if (videoRef.current) {
           if (Hls.isSupported()) {
@@ -120,7 +118,7 @@ const VideoPlayer: React.FC = () => {
                   const segmentName = url.split("/").pop();
                   if (segmentName) {
                     // Redirect to the proper segment endpoint
-                    const segmentUrl = `http://localhost:3000/torrent/getSegment/${imdbId}/${quality}/${segmentName}`;
+                    const segmentUrl = `${"http://localhost:3000/api"}/torrent/getSegment/${imdbId}/${quality}/${segmentName}`;
                     xhr.open("GET", segmentUrl, true);
                     return;
                   }
@@ -375,7 +373,7 @@ const VideoPlayer: React.FC = () => {
         try {
           console.log("Loading subtitle:", {
             language: subtitle.language,
-            url: `http://localhost:3000/${subtitle.url}`,
+            url: `${"http://localhost:3000"}/${subtitle.url}`,
             originalUrl: subtitle.url,
           });
 
@@ -402,15 +400,15 @@ const VideoPlayer: React.FC = () => {
   // Alternative method to load subtitles manually if needed
   const loadSubtitleManually = async (subtitle: Subtitle) => {
     try {
-      const response = await api.get(`/${subtitle.url}`, {
-        responseType: 'arraybuffer'
-      });
+      const response = await fetch(
+        `${"http://localhost:3000"}/${subtitle.url}`,
+      );
 
       let srtContent: string;
 
       if (subtitle.language === "Arabic") {
         // For Arabic, try multiple encoding methods
-        const arrayBuffer = response.data;
+        const arrayBuffer = await response.arrayBuffer();
 
         // Try different encodings for Arabic
         const encodings = ["utf-8", "windows-1256", "iso-8859-6"];
@@ -625,10 +623,10 @@ const VideoPlayer: React.FC = () => {
         srtContent = decodedContent;
       } else {
         // For non-Arabic, get text response
-        const textResponse = await api.get(`/${subtitle.url}`, {
-          responseType: 'text'
-        });
-        srtContent = textResponse.data;
+        const response = await fetch(
+          `${"http://localhost:3000"}/${subtitle.url}`,
+        );
+        srtContent = await response.text();
       }
 
       console.log(
@@ -920,8 +918,8 @@ const VideoPlayer: React.FC = () => {
                   <button
                     onClick={() => handleSubtitleSelect(null)}
                     className={`block w-full text-left px-2 py-1 text-sm rounded transition ${!selectedSubtitle
-                        ? "bg-red-500 text-white"
-                        : "text-gray-300 hover:bg-gray-700"
+                      ? "bg-red-500 text-white"
+                      : "text-gray-300 hover:bg-gray-700"
                       }`}
                   >
                     Off
@@ -931,8 +929,8 @@ const VideoPlayer: React.FC = () => {
                       key={subtitle.id}
                       onClick={() => handleSubtitleSelect(subtitle)}
                       className={`block w-full text-left px-2 py-1 text-sm rounded transition ${selectedSubtitle?.id === subtitle.id
-                          ? "bg-red-500 text-white"
-                          : "text-gray-300 hover:bg-gray-700"
+                        ? "bg-red-500 text-white"
+                        : "text-gray-300 hover:bg-gray-700"
                         }`}
                     >
                       {subtitle.language}

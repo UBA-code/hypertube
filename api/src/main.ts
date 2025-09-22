@@ -11,7 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: ['http://localhost:5173', 'https://hlsjs.video-dev.org'],
+    origin: ['http://localhost:3000', 'https://hlsjs.video-dev.org'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
@@ -47,6 +47,7 @@ async function bootstrap() {
   if (!existsSync(uploadPath)) {
     mkdirSync(uploadPath);
   }
+  app.setGlobalPrefix('api');
   await app.listen(3000, '0.0.0.0');
 }
 bootstrap();

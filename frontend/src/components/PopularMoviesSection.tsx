@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaSearch, FaSort } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 import { MdTrendingUp } from "react-icons/md";
 import MovieCard from "./MovieCard";
 
@@ -96,7 +96,7 @@ const PopularMoviesSection: React.FC<PopularMoviesSectionProps> = ({
         setError(null);
 
         const response = await fetch(
-          `http://localhost:3000/movies/popular?page=${page}&sortBy=${sortBy}`,
+          `${"http://localhost:3000/api"}/movies/popular?page=${page}&sortBy=${sortBy}`,
           {
             method: "GET",
             headers: {

@@ -123,8 +123,10 @@ export class UsersService {
       authType: user.authType,
     });
     if (userFound) {
+      this.logger.debug(`User ${userName} found in database`);
       return userFound;
     }
+    this.logger.debug(`User ${userName} not found, creating new user`);
     return await this.usersRepository.save(user);
   }
 
@@ -163,8 +165,9 @@ export class UsersService {
     if (!newUser) throw new NotFoundException();
     Object.assign(newUser, rest);
     if (file) {
-      newUser.profilePicture =
-        process.env.API_URL + '/uploads/' + file.filename;
+      const apiUrl = process.env.API_URL.split('/');
+      const baseUrl = apiUrl.slice(0, apiUrl.length - 1).join('/');
+      newUser.profilePicture = baseUrl + '/uploads/' + file.filename;
     }
     if (email && email !== newUser.email) {
       await this.authService.sendVerificationMail(

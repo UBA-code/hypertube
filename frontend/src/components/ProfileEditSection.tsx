@@ -165,7 +165,7 @@ const ProfileEditSection: React.FC<ProfileEditSectionProps> = ({
         formDataToSend.append("profilePicture", profilePictureFile);
       }
 
-      const response = await fetch("http://localhost:3000/users", {
+      const response = await fetch(`${"http://localhost:3000/api"}/users`, {
         method: "PATCH",
         credentials: "include",
         body: formDataToSend,

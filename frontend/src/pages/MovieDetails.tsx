@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
   FaPlay,
-  FaDownload,
   FaHeart,
   FaRegHeart,
   FaStar,
@@ -303,9 +302,7 @@ const MovieDetails: React.FC = () => {
       {/* Top Bar */}
       <div className="bg-gray-900 px-4 md:px-6 py-4">
         <DashboardTopBar
-          currentUser={currentUser}
           showMobileMenu={false}
-          showNotification={false}
         />
       </div>
 

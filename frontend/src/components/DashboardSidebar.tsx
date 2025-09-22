@@ -3,10 +3,9 @@ import {
   FaPlay,
   FaHistory,
   FaUserCircle,
-  FaCog,
   FaSignOutAlt,
 } from "react-icons/fa";
-import { MdLocalMovies, MdDownload, MdTrendingUp } from "react-icons/md";
+import { MdLocalMovies, MdTrendingUp } from "react-icons/md";
 
 interface User {
   userName: string;
@@ -55,11 +54,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <ul className="space-y-2">
           <li>
             <button
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                activeTab === "popular"
-                  ? "bg-gradient-to-r from-red-600 to-purple-600"
-                  : "hover:bg-gray-700"
-              }`}
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${activeTab === "popular"
+                ? "bg-gradient-to-r from-red-600 to-purple-600"
+                : "hover:bg-gray-700"
+                }`}
               onClick={() => setActiveTab("popular")}
             >
               <MdTrendingUp className="text-xl" />
@@ -68,11 +66,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </li>
           <li>
             <button
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                activeTab === "watched"
-                  ? "bg-gradient-to-r from-red-600 to-purple-600"
-                  : "hover:bg-gray-700"
-              }`}
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${activeTab === "watched"
+                ? "bg-gradient-to-r from-red-600 to-purple-600"
+                : "hover:bg-gray-700"
+                }`}
               onClick={() => setActiveTab("watched")}
             >
               <FaHistory className="text-xl" />
@@ -81,11 +78,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </li>
           <li>
             <button
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                activeTab === "library"
-                  ? "bg-gradient-to-r from-red-600 to-purple-600"
-                  : "hover:bg-gray-700"
-              }`}
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${activeTab === "library"
+                ? "bg-gradient-to-r from-red-600 to-purple-600"
+                : "hover:bg-gray-700"
+                }`}
               onClick={() => setActiveTab("library")}
             >
               <MdLocalMovies className="text-xl" />
@@ -107,11 +103,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </li> */}
           <li>
             <button
-              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${
-                activeTab === "profile"
-                  ? "bg-gradient-to-r from-red-600 to-purple-600"
-                  : "hover:bg-gray-700"
-              }`}
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${activeTab === "profile"
+                ? "bg-gradient-to-r from-red-600 to-purple-600"
+                : "hover:bg-gray-700"
+                }`}
               onClick={() => setActiveTab("profile")}
             >
               <FaUserCircle className="text-xl" />

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlay, FaHeart, FaRegHeart, FaCheck } from "react-icons/fa";
-import { MdDownload } from "react-icons/md";
 import { RiMovie2Line } from "react-icons/ri";
 
 interface Movie {
@@ -60,7 +59,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/movies/favorite/${movie.imdbId}`,
+        `${"http://localhost:3000/api"}/movies/favorite/${movie.imdbId}`,
         {
           method: "POST",
           headers: {
@@ -119,9 +118,8 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           <img
             src={movie.coverImage}
             alt={movie.title}
-            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-              movie.isWatched ? "opacity-75" : ""
-            }`}
+            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${movie.isWatched ? "opacity-75" : ""
+              }`}
           />
         ) : (
           <div className="w-full h-full bg-gray-700 flex items-center justify-center">
@@ -137,9 +135,8 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
               </button>
 
               <button
-                className={`w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center hover:bg-opacity-100 transition ${
-                  isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center hover:bg-opacity-100 transition ${isUpdatingFavorite ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 onClick={toggleFavorite}
                 disabled={isUpdatingFavorite}
               >
@@ -182,9 +179,8 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
       <div className="mt-3">
         <h3
-          className={`font-semibold truncate ${
-            movie.isWatched ? "text-green-400" : ""
-          }`}
+          className={`font-semibold truncate ${movie.isWatched ? "text-green-400" : ""
+            }`}
         >
           {movie.title}
         </h3>
