@@ -44,7 +44,35 @@ docker-compose up --build
 
 ## Screenshots
 
-<!-- Add screenshots or GIFs here to showcase the UI and streaming experience -->
+Here are some screenshots of Hypertube in action:
+
+### Authentication Page
+
+![Authentication Page](images/auth.png)
+
+### Landing Page
+
+![Landing Page](images/landing%20page.png)
+
+### Popular Movies
+
+![Popular Movies](images/popular.png)
+
+### Movie Details
+
+![Movie Details](images/movie%20page.png)
+
+### Streaming Player
+
+![Streaming Player](images/video%20player.png)
+
+### Community and Comments
+
+![Comments Section](images/comments.png)
+
+### Watch history
+
+![Watch History](images/watch%20history.png)
 
 ## Example Usage
 
