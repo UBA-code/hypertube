@@ -16,7 +16,7 @@
 
 - **Frontend**: React, TypeScript, Tailwind CSS, Vite, React Router, React Icons
 - **Backend**: NestJS (TypeScript), Swagger for API documentation
-- **Streaming**: BitTorrent protocol for peer-to-peer video streaming
+- **Streaming**: Uses HLS (HTTP Live Streaming) with FFmpeg for real-time video streaming.
 - **Authentication**: OAuth and email-based authentication
 - **Deployment**: Docker support for both frontend and backend
 
