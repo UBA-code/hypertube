@@ -19,7 +19,7 @@ services:
     env_file:
       - ".env.prod"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/MAJOR/docker
     restart: always
 
   adminer:
