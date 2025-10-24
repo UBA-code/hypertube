@@ -1,5 +1,7 @@
 # Hypertube
 
+[![Hits](https://hitcount.dev/p/UBA-code/https://github.com/UBA-code/hypertube.svg)](https://hitcount.dev/p/UBA-code/https://github.com/UBA-code/hypertube)
+
 🍿 **Hypertube** is a modern, Netflix-inspired movie streaming application that leverages BitTorrent technology to deliver thousands of movies instantly, right in your browser. Enjoy HD streaming with no ads, no subscriptions, and no waiting.
 
 ## Features
